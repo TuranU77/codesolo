@@ -1,16 +1,11 @@
 :root {
-  --bg-top: #080014;
-  --bg-mid: #160022;
-  --bg-bottom: #30004f;
-  --text: #fefefe;
-  --muted: #d7c9ff;
-  --cyan: #27f7ff;
-  --magenta: #ff2bb5;
-  --yellow: #ffd84c;
-  --lime: #94ff4b;
-  --panel: rgba(9, 4, 34, 0.82);
-  --border: #5b56e5;
-  --scanline: rgba(255, 255, 255, 0.03);
+  --bg: #f3c93a;
+  --panel: #f4f4f4;
+  --title: #0f0f0f;
+  --line: #0f0f0f;
+  --text: #0f0f0f;
+  --muted: #444;
+  --shadow: 8px 8px 0 #000;
 }
 
 * {
@@ -19,279 +14,202 @@
 
 html,
 body {
-  min-height: 100%;
   margin: 0;
+  min-height: 100%;
 }
 
 body {
-  font-family: "VT323", monospace;
+  font-family: "Courier New", monospace;
+  background: var(--bg);
   color: var(--text);
-  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bottom) 100%);
-  padding: 1.4rem 1rem 3rem;
+  overflow: hidden;
+}
+
+.desktop {
   position: relative;
-  overflow-x: hidden;
+  width: 100vw;
+  height: calc(100vh - 56px);
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 26px 26px;
+  overflow: hidden;
 }
 
-.crt::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at center, transparent 62%, rgba(0, 0, 0, 0.4) 100%);
-  z-index: 2;
-}
-
-.scanlines {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  background: repeating-linear-gradient(0deg, transparent 0 3px, var(--scanline) 3px 4px);
-  mix-blend-mode: screen;
-}
-
-.sun {
-  position: fixed;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  top: -180px;
-  right: -80px;
-  z-index: -2;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.24) 0 4px,
-      rgba(255, 255, 255, 0) 4px 12px
-    ),
-    linear-gradient(180deg, #ffe680 0%, #ff9f5b 55%, #ff2bb5 100%);
-  box-shadow: 0 0 60px rgba(255, 106, 197, 0.55);
-}
-
-.horizon-grid {
-  position: fixed;
-  left: -10vw;
-  right: -10vw;
-  bottom: -18vh;
-  height: 54vh;
-  transform: perspective(260px) rotateX(64deg);
-  transform-origin: bottom;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(39, 247, 255, 0.33) 0 2px,
-      transparent 2px 54px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(39, 247, 255, 0.24) 0 2px,
-      transparent 2px 54px
-    );
-  border-top: 2px solid rgba(39, 247, 255, 0.65);
-  filter: drop-shadow(0 0 10px rgba(39, 247, 255, 0.45));
-  z-index: -1;
-  animation: gridMove 9s linear infinite;
-}
-
-.site-header,
-.apps-section,
-.about,
-.site-footer {
-  width: min(1040px, 100%);
-  margin-inline: auto;
-}
-
-.site-header,
-.about,
-.app-card {
+.window {
+  position: absolute;
+  min-width: 280px;
+  max-width: min(94vw, 650px);
+  min-height: 160px;
   background: var(--panel);
-  border: 2px solid var(--border);
-  box-shadow: 0 0 0 2px #24105e, 0 0 0 4px #10072f;
+  border: 3px solid var(--line);
+  box-shadow: var(--shadow);
 }
 
-.site-header {
-  padding: 1.1rem 1.1rem 1.3rem;
-  margin-top: 0.7rem;
-  animation: pop 420ms steps(5) both;
+.window.hidden {
+  display: none;
 }
 
-.eyebrow {
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.55rem;
+  background: var(--title);
+  color: #fff;
+  border-bottom: 3px solid var(--line);
+  cursor: move;
+  user-select: none;
+}
+
+.titlebar p {
   margin: 0;
-  color: var(--lime);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: clamp(1rem, 3.4vw, 1.35rem);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 
-h1,
-h2,
-h3 {
-  font-family: "Press Start 2P", monospace;
-  text-transform: uppercase;
-  line-height: 1.25;
+.window-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.action-btn {
+  width: 26px;
+  height: 24px;
+  border: 2px solid #fff;
+  background: #111;
+  color: #fff;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  background: #fff;
+  color: #000;
+}
+
+.window-body {
+  padding: 0.9rem;
+  font-size: 1rem;
 }
 
 h1 {
-  margin: 0.7rem 0 0.35rem;
-  font-size: clamp(1.7rem, 6vw, 3.6rem);
-  color: var(--cyan);
-  text-shadow: 2px 2px 0 #001f49, -2px -2px 0 #7d0057;
+  margin: 0 0 0.4rem;
+  font-size: 2rem;
 }
 
 .claim {
-  margin: 0.1rem 0 0.8rem;
-  color: var(--yellow);
-  font-size: clamp(1.2rem, 4vw, 2rem);
-}
-
-.intro {
-  margin: 0;
-  max-width: 56ch;
-  color: var(--muted);
-  font-size: clamp(1.1rem, 2.7vw, 1.45rem);
-}
-
-.cta {
-  margin-top: 1rem;
-  display: inline-block;
-  text-decoration: none;
-  font-family: "Press Start 2P", monospace;
-  font-size: clamp(0.68rem, 1.5vw, 0.82rem);
-  color: #160022;
-  background: var(--yellow);
-  padding: 0.9rem 1rem;
-  border: 2px solid #ffd84c;
-  box-shadow: 4px 4px 0 #ff2bb5;
-  transition: transform 120ms steps(2), box-shadow 120ms steps(2);
-}
-
-.cta:hover {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 #ff2bb5;
-}
-
-.apps-section {
-  margin-top: 1.5rem;
-}
-
-.section-top h2,
-.about h2 {
-  margin-bottom: 0.55rem;
-  font-size: clamp(1rem, 2.8vw, 1.5rem);
-  color: var(--magenta);
-  text-shadow: 1px 1px 0 #02103b;
-}
-
-.section-top p,
-.about p {
-  margin-top: 0;
-  color: var(--muted);
-  font-size: clamp(1.08rem, 2.4vw, 1.32rem);
+  margin: 0 0 0.7rem;
+  font-weight: 700;
 }
 
 .app-grid {
-  margin-top: 1rem;
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.6rem;
 }
 
 .app-card {
-  padding: 1rem;
-  transform: translateY(7px);
-  opacity: 0;
-  animation: pop 360ms steps(4) both;
+  border: 2px solid #000;
+  background: #fff;
+  padding: 0.55rem;
 }
 
 .app-name {
-  margin: 0;
-  color: var(--cyan);
-  font-size: clamp(0.9rem, 2.1vw, 1rem);
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
 }
 
 .app-tagline {
-  margin: 0.55rem 0 0.8rem;
+  margin: 0 0 0.45rem;
   color: var(--muted);
-  min-height: 2.3em;
-  font-size: 1.17rem;
 }
 
 .app-links {
   display: flex;
+  gap: 0.4rem;
   flex-wrap: wrap;
-  gap: 0.55rem;
 }
 
 .chip {
+  display: inline-block;
+  padding: 0.3rem 0.45rem;
+  border: 2px solid #000;
+  color: #fff;
+  background: #111;
   text-decoration: none;
-  font-family: "Press Start 2P", monospace;
-  font-size: 0.62rem;
-  color: var(--text);
-  border: 2px solid var(--magenta);
-  background: rgba(255, 43, 181, 0.14);
-  padding: 0.55rem 0.65rem;
-  transition: border-color 120ms steps(2), transform 120ms steps(2), color 120ms steps(2);
+  font-size: 0.9rem;
 }
 
 .chip:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  transform: translate(-1px, -1px);
+  background: #fff;
+  color: #000;
 }
 
-.about {
-  margin-top: 1.9rem;
-  padding: 1rem;
+a {
+  color: #111;
+  font-weight: 700;
 }
 
-.site-footer {
-  margin-top: 1.6rem;
-  text-align: center;
-  color: #d7d0ff;
-  font-size: 1.08rem;
+#privacy-links p {
+  margin: 0.35rem 0;
 }
 
-.site-footer a {
-  color: var(--cyan);
+.taskbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  border-top: 3px solid #000;
+  background: #d7d7d7;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.5rem;
+  overflow-x: auto;
 }
 
-@keyframes pop {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.task-btn {
+  border: 2px solid #000;
+  background: #f4f4f4;
+  color: #000;
+  font: inherit;
+  height: 34px;
+  min-width: 110px;
+  padding: 0 0.55rem;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-@keyframes gridMove {
-  from {
-    background-position:
-      0 0,
-      0 0;
-  }
-  to {
-    background-position:
-      0 0,
-      0 54px;
-  }
+.task-btn.active {
+  background: #000;
+  color: #fff;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   body {
-    padding: 1rem 0.8rem 2rem;
+    overflow: auto;
   }
 
-  .sun {
-    width: 300px;
-    height: 300px;
-    right: -90px;
+  .desktop {
+    height: auto;
+    min-height: calc(100vh - 56px);
+    padding-bottom: 1rem;
   }
 
-  .cta,
-  .chip {
-    line-height: 1.45;
+  .window {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    width: calc(100vw - 2rem) !important;
+    max-width: none;
+    margin: 0.8rem auto 0;
+  }
+
+  .titlebar {
+    cursor: default;
   }
 }

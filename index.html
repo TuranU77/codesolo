@@ -8,58 +8,70 @@
       name="description"
       content="Offizielle Seite von Code Solo mit allen Apps und Datenschutzrichtlinien."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body class="crt">
-    <div class="scanlines" aria-hidden="true"></div>
-    <div class="sun" aria-hidden="true"></div>
-    <div class="horizon-grid" aria-hidden="true"></div>
-
-    <header class="site-header">
-      <p class="eyebrow">1-Bit Indie Studio</p>
-      <h1>Code Solo</h1>
-      <p class="claim">May the source be with me.</p>
-      <p class="intro">
-        Solo-Dev im Arcade-Modus: schnelle Iteration, klare Releases und
-        Datenschutz-Links, die nicht im Nebel verschwinden.
-      </p>
-      <a href="#apps" class="cta">Zu den Apps</a>
-    </header>
-
-    <main>
-      <section id="apps" class="apps-section">
-        <div class="section-top">
-          <h2>Apps & Privacy Links</h2>
+  <body>
+    <main class="desktop" id="desktop">
+      <section class="window" data-window="welcome" style="left: 4vw; top: 6vh; width: 500px">
+        <header class="titlebar handle">
+          <p>CODE-SOLO.EXE</p>
+          <div class="window-actions">
+            <button type="button" class="action-btn" data-action="minimize" aria-label="Minimieren">_</button>
+            <button type="button" class="action-btn" data-action="close" aria-label="Schliessen">x</button>
+          </div>
+        </header>
+        <div class="window-body">
+          <h1>Code Solo</h1>
+          <p class="claim">May the source be with me.</p>
           <p>
-            Für den App Store: jede App hat hier ihren direkten Link zur
-            Datenschutzrichtlinie.
+            Willkommen im Solo-Dev Desktop. Verschiebe die Fenster und finde alle App-Store-
+            und Datenschutz-Links an einem Ort.
           </p>
         </div>
-        <div id="app-grid" class="app-grid" aria-live="polite"></div>
       </section>
 
-      <section class="about">
-        <h2>Warum diese Seite?</h2>
-        <p>
-          Weil ich ein Ein-Mann-Studio bin und trotzdem liefern will wie ein
-          kleines Team: transparent, solide, mit einem Augenzwinkern.
-        </p>
+      <section class="window" data-window="apps" style="left: 44vw; top: 10vh; width: 560px">
+        <header class="titlebar handle">
+          <p>APPS-REGISTRY.DAT</p>
+          <div class="window-actions">
+            <button type="button" class="action-btn" data-action="minimize" aria-label="Minimieren">_</button>
+            <button type="button" class="action-btn" data-action="close" aria-label="Schliessen">x</button>
+          </div>
+        </header>
+        <div class="window-body">
+          <p>Alle Apps mit direktem Link zu App Store und Datenschutz:</p>
+          <div id="app-grid" class="app-grid" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="window" data-window="privacy" style="left: 12vw; top: 48vh; width: 420px">
+        <header class="titlebar handle">
+          <p>PRIVACY-LINKS.TXT</p>
+          <div class="window-actions">
+            <button type="button" class="action-btn" data-action="minimize" aria-label="Minimieren">_</button>
+            <button type="button" class="action-btn" data-action="close" aria-label="Schliessen">x</button>
+          </div>
+        </header>
+        <div class="window-body" id="privacy-links"></div>
+      </section>
+
+      <section class="window" data-window="contact" style="left: 56vw; top: 56vh; width: 360px">
+        <header class="titlebar handle">
+          <p>CONTACT.INI</p>
+          <div class="window-actions">
+            <button type="button" class="action-btn" data-action="minimize" aria-label="Minimieren">_</button>
+            <button type="button" class="action-btn" data-action="close" aria-label="Schliessen">x</button>
+          </div>
+        </header>
+        <div class="window-body">
+          <p>Mail: <a href="mailto:hello@codesolo.dev">hello@codesolo.dev</a></p>
+          <p>Repo: <a href="https://github.com/TuranU77/codesolo" target="_blank" rel="noreferrer noopener">github.com/TuranU77/codesolo</a></p>
+          <p>© <span id="year"></span> Code Solo</p>
+        </div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <p>© <span id="year"></span> Code Solo</p>
-      <p>
-        Kontakt:
-        <a href="mailto:hello@codesolo.dev">hello@codesolo.dev</a>
-      </p>
-    </footer>
+    <div class="taskbar" id="taskbar"></div>
 
     <script src="./script.js"></script>
   </body>
