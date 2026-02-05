@@ -114,6 +114,14 @@ h1 {
   font-weight: 700;
 }
 
+.logo-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 2px solid #000;
+  background: #fff;
+}
+
 .app-grid {
   display: grid;
   gap: 0.6rem;
