@@ -243,7 +243,7 @@ a {
   .desktop {
     height: auto;
     min-height: calc(100vh - 56px);
-    padding-bottom: 1rem;
+    padding-bottom: 5.4rem;
   }
 
   .window {
@@ -257,5 +257,27 @@ a {
 
   .titlebar {
     cursor: default;
+  }
+
+  .taskbar {
+    gap: 0.35rem;
+    padding:
+      0.45rem
+      calc(0.55rem + env(safe-area-inset-right))
+      calc(0.45rem + env(safe-area-inset-bottom))
+      calc(0.55rem + env(safe-area-inset-left));
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+
+  .task-btn {
+    height: 36px;
+    min-width: 94px;
+    max-width: 138px;
+    padding: 0 0.45rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.86rem;
+    scroll-snap-align: start;
   }
 }
