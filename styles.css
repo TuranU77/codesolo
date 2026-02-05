@@ -118,8 +118,10 @@ h1 {
   display: block;
   width: 100%;
   height: auto;
-  border: 2px solid #000;
-  background: #fff;
+}
+
+.window[data-window="logo-jpg"] .window-body {
+  padding: 0;
 }
 
 .app-grid {
