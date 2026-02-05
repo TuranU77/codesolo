@@ -52,7 +52,11 @@
             <button type="button" class="action-btn" data-action="close" aria-label="Close">x</button>
           </div>
         </header>
-        <div class="window-body" id="privacy-links"></div>
+        <div class="window-body">
+          <div id="privacy-controls" class="privacy-controls"></div>
+          <iframe id="privacy-frame" class="privacy-frame" title="Privacy Policy Viewer" loading="lazy"></iframe>
+          <p class="privacy-source">Source: <a id="privacy-source-link" href="#" target="_blank" rel="noreferrer noopener">Open full policy</a></p>
+        </div>
       </section>
 
       <section class="window" data-window="contact" style="left: 56vw; top: 56vh; width: 360px">

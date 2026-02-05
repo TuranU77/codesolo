@@ -14,7 +14,9 @@ const apps = [
 ];
 
 const appGrid = document.getElementById("app-grid");
-const privacyLinks = document.getElementById("privacy-links");
+const privacyControls = document.getElementById("privacy-controls");
+const privacyFrame = document.getElementById("privacy-frame");
+const privacySourceLink = document.getElementById("privacy-source-link");
 const year = document.getElementById("year");
 const desktop = document.getElementById("desktop");
 const taskbar = document.getElementById("taskbar");
@@ -30,28 +32,36 @@ apps.forEach((app, index) => {
     <p class="app-tagline">${app.tagline}</p>
     <div class="app-links">
       <a class="chip" href="${app.appStoreUrl}" target="_blank" rel="noreferrer noopener">App Store</a>
-      <span class="chip">Policy in viewer</span>
+      <button class="chip js-open-policy" type="button" data-policy-url="${app.privacyUrl}" data-policy-name="${app.name}">Open Policy</button>
     </div>
   `;
 
   appGrid.appendChild(card);
-
-  const privacyItem = document.createElement("section");
-  privacyItem.className = "privacy-embed";
-  privacyItem.innerHTML = `
-    <h4>${app.name}</h4>
-    <iframe
-      class="privacy-frame"
-      src="${app.privacyUrl}"
-      title="Privacy Policy - ${app.name}"
-      loading="lazy"
-      referrerpolicy="no-referrer"
-    >
-      <a href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">Open privacy policy</a>
-    </iframe>
-  `;
-  privacyLinks.appendChild(privacyItem);
 });
+
+function setPolicy(url, appName) {
+  privacyFrame.src = url;
+  privacyFrame.title = `Privacy Policy - ${appName}`;
+  privacySourceLink.href = url;
+  privacySourceLink.textContent = `Open full policy (${appName})`;
+}
+
+function renderPrivacyTabs() {
+  apps.forEach((app, index) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "privacy-tab";
+    tab.textContent = app.name;
+    tab.addEventListener("click", () => {
+      setPolicy(app.privacyUrl, app.name);
+      document.querySelectorAll(".privacy-tab").forEach((btn) => btn.classList.remove("active"));
+      tab.classList.add("active");
+    });
+    if (index === 0) tab.classList.add("active");
+    privacyControls.appendChild(tab);
+  });
+  setPolicy(apps[0].privacyUrl, apps[0].name);
+}
 
 let topZ = 20;
 
@@ -95,6 +105,22 @@ function enableWindowActions() {
   });
 }
 
+function enablePolicyButtons() {
+  document.querySelectorAll(".js-open-policy").forEach((button) => {
+    button.addEventListener("click", () => {
+      const url = button.dataset.policyUrl;
+      const name = button.dataset.policyName;
+      const privacyWindow = document.querySelector('[data-window="privacy"]');
+      setPolicy(url, name);
+      document.querySelectorAll(".privacy-tab").forEach((tab) => {
+        tab.classList.toggle("active", tab.textContent === name);
+      });
+      privacyWindow.classList.remove("hidden");
+      focusWindow(privacyWindow);
+    });
+  });
+}
+
 function enableDragging() {
   if (window.matchMedia("(max-width: 900px)").matches) return;
 
@@ -131,6 +157,8 @@ function enableDragging() {
 }
 
 buildTaskbar();
+renderPrivacyTabs();
 enableWindowActions();
+enablePolicyButtons();
 enableDragging();
 document.querySelectorAll(".window").forEach((win) => focusWindow(win));
