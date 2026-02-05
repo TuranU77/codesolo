@@ -50,6 +50,14 @@ body {
   display: none;
 }
 
+.window.minimized {
+  min-height: 0;
+}
+
+.window.minimized .window-body {
+  display: none;
+}
+
 .titlebar {
   display: flex;
   align-items: center;

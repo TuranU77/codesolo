@@ -82,10 +82,24 @@ function buildTaskbar() {
     button.textContent = win.querySelector(".titlebar p").textContent;
     button.addEventListener("click", () => {
       win.classList.remove("hidden");
+      setMinimized(win, false);
       focusWindow(win);
     });
     taskbar.appendChild(button);
   });
+}
+
+function setMinimized(win, shouldMinimize) {
+  const minimizeBtn = win.querySelector('[data-action="minimize"]');
+  if (shouldMinimize) {
+    win.classList.add("minimized");
+    minimizeBtn.textContent = "+";
+    minimizeBtn.setAttribute("aria-label", "Restore");
+    return;
+  }
+  win.classList.remove("minimized");
+  minimizeBtn.textContent = "_";
+  minimizeBtn.setAttribute("aria-label", "Minimize");
 }
 
 function enableWindowActions() {
@@ -94,11 +108,13 @@ function enableWindowActions() {
     const closeBtn = win.querySelector('[data-action="close"]');
 
     minimizeBtn.addEventListener("click", () => {
-      win.classList.add("hidden");
+      setMinimized(win, !win.classList.contains("minimized"));
+      focusWindow(win);
     });
 
     closeBtn.addEventListener("click", () => {
       win.classList.add("hidden");
+      setMinimized(win, false);
     });
 
     win.addEventListener("mousedown", () => focusWindow(win));
@@ -116,6 +132,7 @@ function enablePolicyButtons() {
         tab.classList.toggle("active", tab.textContent === name);
       });
       privacyWindow.classList.remove("hidden");
+      setMinimized(privacyWindow, false);
       focusWindow(privacyWindow);
     });
   });
