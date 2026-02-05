@@ -30,20 +30,26 @@ apps.forEach((app, index) => {
     <p class="app-tagline">${app.tagline}</p>
     <div class="app-links">
       <a class="chip" href="${app.appStoreUrl}" target="_blank" rel="noreferrer noopener">App Store</a>
-      ${
-        app.privacyUrl
-          ? `<a class="chip" href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">Privacy</a>`
-          : `<span class="chip">Privacy soon</span>`
-      }
+      <span class="chip">Policy in viewer</span>
     </div>
   `;
 
   appGrid.appendChild(card);
 
-  const privacyItem = document.createElement("p");
-  privacyItem.innerHTML = app.privacyUrl
-    ? `<a href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">${app.name} - Privacy Policy</a>`
-    : `${app.name} - Privacy policy URL pending`;
+  const privacyItem = document.createElement("section");
+  privacyItem.className = "privacy-embed";
+  privacyItem.innerHTML = `
+    <h4>${app.name}</h4>
+    <iframe
+      class="privacy-frame"
+      src="${app.privacyUrl}"
+      title="Privacy Policy - ${app.name}"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    >
+      <a href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">Open privacy policy</a>
+    </iframe>
+  `;
   privacyLinks.appendChild(privacyItem);
 });
 
