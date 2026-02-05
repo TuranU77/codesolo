@@ -1,10 +1,10 @@
 const apps = [
   {
     name: "HUP",
-    tagline: "A quick indie game made by one dev with too much coffee.",
+    tagline: "A quick indie game made by a one-man studio fueled by too much coffee.",
     appStoreUrl: "https://apps.apple.com/",
     privacyUrl: "https://turanu77.github.io/codesolo/privacy/hup.html",
-    info: "A compact solo-made game project from Code Solo. No user data is collected."
+    info: "A compact game project from a one-man indie studio. No user data is collected."
   },
   {
     name: "LUNIO - Good Night, Dear Moon",
