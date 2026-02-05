@@ -1,21 +1,15 @@
 const apps = [
   {
-    name: "App One",
-    tagline: "Macht eine Sache. Die aber richtig.",
-    appStoreUrl: "https://apps.apple.com/",
-    privacyUrl: "https://github.com/your-user/your-app-one/privacy-policy"
+    name: "LUNIO - Good Night, Dear Moon",
+    tagline: "A cozy bedtime game for little night explorers.",
+    appStoreUrl: "https://apps.apple.com/de/app/lunio-gute-nacht-lieber-mond/id6757497490",
+    privacyUrl: ""
   },
   {
-    name: "App Two",
-    tagline: "Weniger Chaos, mehr Fokus.",
-    appStoreUrl: "https://apps.apple.com/",
-    privacyUrl: "https://github.com/your-user/your-app-two/privacy-policy"
-  },
-  {
-    name: "App Three",
-    tagline: "Ein kleines Tool mit Main-Character-Energy.",
-    appStoreUrl: "https://apps.apple.com/",
-    privacyUrl: "https://github.com/your-user/your-app-three/privacy-policy"
+    name: "WOLF - Party Game",
+    tagline: "Fast, loud, social chaos for your next game night.",
+    appStoreUrl: "https://apps.apple.com/de/app/wolf-party-game/id6747474675",
+    privacyUrl: ""
   }
 ];
 
@@ -36,14 +30,20 @@ apps.forEach((app, index) => {
     <p class="app-tagline">${app.tagline}</p>
     <div class="app-links">
       <a class="chip" href="${app.appStoreUrl}" target="_blank" rel="noreferrer noopener">App Store</a>
-      <a class="chip" href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">Datenschutz</a>
+      ${
+        app.privacyUrl
+          ? `<a class="chip" href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">Privacy</a>`
+          : `<span class="chip">Privacy soon</span>`
+      }
     </div>
   `;
 
   appGrid.appendChild(card);
 
   const privacyItem = document.createElement("p");
-  privacyItem.innerHTML = `<a href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">${app.name} - Datenschutz</a>`;
+  privacyItem.innerHTML = app.privacyUrl
+    ? `<a href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">${app.name} - Privacy Policy</a>`
+    : `${app.name} - Privacy policy URL pending`;
   privacyLinks.appendChild(privacyItem);
 });
 
