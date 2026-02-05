@@ -3,14 +3,14 @@ const apps = [
     name: "LUNIO - Good Night, Dear Moon",
     tagline: "A cozy bedtime game for little night explorers.",
     appStoreUrl: "https://apps.apple.com/de/app/lunio-gute-nacht-lieber-mond/id6757497490",
-    privacyUrl: "https://turanu77.github.io/gute-nacht-mond-privacy/?lang=de",
+    privacyUrl: "https://turanu77.github.io/codesolo/privacy/lunio.html",
     info: "A calm bedtime story game with friendly interactions and sleepy moon vibes."
   },
   {
     name: "WOLF - Party Game",
     tagline: "Fast, loud, social chaos for your next game night.",
     appStoreUrl: "https://apps.apple.com/de/app/wolf-party-game/id6747474675",
-    privacyUrl: "https://turanu77.github.io/wolf-privacy/datenschutz.html",
+    privacyUrl: "https://turanu77.github.io/codesolo/privacy/wolf.html",
     info: "A social party game built for quick rounds, big laughs, and chaotic group energy."
   }
 ];
