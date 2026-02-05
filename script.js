@@ -17,7 +17,6 @@ const apps = [
 
 const appGrid = document.getElementById("app-grid");
 const privacyControls = document.getElementById("privacy-controls");
-const privacyPlaceholder = document.getElementById("privacy-placeholder");
 const privacySourceLink = document.getElementById("privacy-source-link");
 const gameInfoContent = document.getElementById("game-info-content");
 const year = document.getElementById("year");
@@ -43,7 +42,6 @@ apps.forEach((app, index) => {
 });
 
 function setPolicy(url, appName) {
-  privacyPlaceholder.textContent = `Selected: ${appName}`;
   privacySourceLink.href = url;
   privacySourceLink.textContent = `Open full policy (${appName})`;
 }
