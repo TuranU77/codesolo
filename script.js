@@ -3,13 +3,15 @@ const apps = [
     name: "LUNIO - Good Night, Dear Moon",
     tagline: "A cozy bedtime game for little night explorers.",
     appStoreUrl: "https://apps.apple.com/de/app/lunio-gute-nacht-lieber-mond/id6757497490",
-    privacyUrl: "https://turanu77.github.io/gute-nacht-mond-privacy/?lang=de"
+    privacyUrl: "https://turanu77.github.io/gute-nacht-mond-privacy/?lang=de",
+    info: "A calm bedtime story game with friendly interactions and sleepy moon vibes."
   },
   {
     name: "WOLF - Party Game",
     tagline: "Fast, loud, social chaos for your next game night.",
     appStoreUrl: "https://apps.apple.com/de/app/wolf-party-game/id6747474675",
-    privacyUrl: "https://turanu77.github.io/wolf-privacy/datenschutz.html"
+    privacyUrl: "https://turanu77.github.io/wolf-privacy/datenschutz.html",
+    info: "A social party game built for quick rounds, big laughs, and chaotic group energy."
   }
 ];
 
@@ -17,6 +19,7 @@ const appGrid = document.getElementById("app-grid");
 const privacyControls = document.getElementById("privacy-controls");
 const privacyFrame = document.getElementById("privacy-frame");
 const privacySourceLink = document.getElementById("privacy-source-link");
+const gameInfoContent = document.getElementById("game-info-content");
 const year = document.getElementById("year");
 const desktop = document.getElementById("desktop");
 const taskbar = document.getElementById("taskbar");
@@ -32,7 +35,7 @@ apps.forEach((app, index) => {
     <p class="app-tagline">${app.tagline}</p>
     <div class="app-links">
       <a class="chip" href="${app.appStoreUrl}" target="_blank" rel="noreferrer noopener">App Store</a>
-      <button class="chip js-open-policy" type="button" data-policy-url="${app.privacyUrl}" data-policy-name="${app.name}">Open Policy</button>
+      <button class="chip js-open-info" type="button" data-app-index="${index}">Open Info</button>
     </div>
   `;
 
@@ -121,19 +124,22 @@ function enableWindowActions() {
   });
 }
 
-function enablePolicyButtons() {
-  document.querySelectorAll(".js-open-policy").forEach((button) => {
+function enableInfoButtons() {
+  document.querySelectorAll(".js-open-info").forEach((button) => {
     button.addEventListener("click", () => {
-      const url = button.dataset.policyUrl;
-      const name = button.dataset.policyName;
-      const privacyWindow = document.querySelector('[data-window="privacy"]');
-      setPolicy(url, name);
-      document.querySelectorAll(".privacy-tab").forEach((tab) => {
-        tab.classList.toggle("active", tab.textContent === name);
-      });
-      privacyWindow.classList.remove("hidden");
-      setMinimized(privacyWindow, false);
-      focusWindow(privacyWindow);
+      const app = apps[Number(button.dataset.appIndex)];
+      const infoWindow = document.querySelector('[data-window="info"]');
+      gameInfoContent.innerHTML = `
+        <h3 class="app-name">${app.name}</h3>
+        <p class="app-tagline">${app.tagline}</p>
+        <p>${app.info}</p>
+        <div class="app-links">
+          <a class="chip" href="${app.appStoreUrl}" target="_blank" rel="noreferrer noopener">Open in App Store</a>
+        </div>
+      `;
+      infoWindow.classList.remove("hidden");
+      setMinimized(infoWindow, false);
+      focusWindow(infoWindow);
     });
   });
 }
@@ -176,6 +182,6 @@ function enableDragging() {
 buildTaskbar();
 renderPrivacyTabs();
 enableWindowActions();
-enablePolicyButtons();
+enableInfoButtons();
 enableDragging();
 document.querySelectorAll(".window").forEach((win) => focusWindow(win));
