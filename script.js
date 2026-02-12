@@ -2,7 +2,7 @@ const apps = [
   {
     name: "HUP",
     tagline: "A quick indie game made by a one-man studio fueled by too much coffee.",
-    appStoreUrl: "https://apps.apple.com/",
+    appStoreUrl: "https://apps.apple.com/ca/app/hup-shell-of-a-journey/id6758862472",
     privacyUrl: "https://turanu77.github.io/codesolo/privacy/hup.html",
     info: "A compact game project from a one-man indie studio. No user data is collected."
   },
