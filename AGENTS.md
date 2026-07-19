@@ -35,6 +35,9 @@ maker with multiple small apps.
   app window.
 - The `GUN.EXE` desktop file should be draggable but visually live below
   normal windows, starting on a free visible area when possible.
+- Experimental FPS mode can use a fixed center crosshair and bottom-center
+  weapon placeholder; mouse movement should pan the desktop world under the
+  crosshair even during continuous fire.
 - Avoid adding large frameworks unless the project truly needs them.
 
 ## Hard Constraints

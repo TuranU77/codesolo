@@ -26,13 +26,19 @@ body {
 }
 
 body.chaos-mode {
-  cursor: crosshair;
+  cursor: none;
+}
+
+body.chaos-mode * {
+  cursor: none !important;
 }
 
 .desktop {
   position: relative;
   width: 100vw;
   height: calc(100vh - 56px);
+  transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
+  transform-origin: center;
   background-image:
     linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
@@ -42,6 +48,10 @@ body.chaos-mode {
 
 .desktop.blast-shake {
   animation: blast-shake 120ms steps(2, end);
+}
+
+.desktop.fps-world {
+  --world-scale: 1.04;
 }
 
 .window {
@@ -339,6 +349,115 @@ a {
   z-index: 9999;
 }
 
+.impact-layer {
+  position: fixed;
+  inset: 0 0 56px;
+  pointer-events: none;
+  z-index: 9997;
+}
+
+.impact-world {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: calc(100vh - 56px);
+  transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
+  transform-origin: center;
+}
+
+body.fps-mode .impact-world {
+  --world-scale: 1.04;
+}
+
+.fps-hud {
+  display: none;
+  pointer-events: none;
+}
+
+body.fps-mode .fps-hud {
+  display: block;
+}
+
+.crosshair {
+  position: fixed;
+  left: 50%;
+  top: calc((100vh - 56px) / 2);
+  width: 68px;
+  height: 68px;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+}
+
+.crosshair-line {
+  position: absolute;
+  background: #050505;
+}
+
+.crosshair-line-top,
+.crosshair-line-bottom {
+  left: 50%;
+  width: 4px;
+  height: 24px;
+  transform: translateX(-50%);
+}
+
+.crosshair-line-left,
+.crosshair-line-right {
+  top: 50%;
+  width: 24px;
+  height: 4px;
+  transform: translateY(-50%);
+}
+
+.crosshair-line-top {
+  top: 0;
+}
+
+.crosshair-line-right {
+  right: 0;
+}
+
+.crosshair-line-bottom {
+  bottom: 0;
+}
+
+.crosshair-line-left {
+  left: 0;
+}
+
+.fps-weapon {
+  position: fixed;
+  left: 50%;
+  bottom: 56px;
+  width: min(620px, 78vw);
+  height: min(310px, 34vh);
+  transform: translateX(-50%);
+  z-index: 9999;
+}
+
+.weapon-image {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.weapon-image-fire {
+  display: none;
+}
+
+body.weapon-firing .weapon-image-idle {
+  display: none;
+}
+
+body.weapon-firing .weapon-image-fire {
+  display: block;
+}
+
 .window-shard {
   position: absolute;
   border: 1px solid #050505;
@@ -364,13 +483,13 @@ a {
 
 @keyframes blast-shake {
   0% {
-    transform: translate(0, 0);
+    transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
   }
   50% {
-    transform: translate(3px, -2px);
+    transform: translate(calc(var(--world-x, 0px) + 3px), calc(var(--world-y, 0px) - 2px)) scale(var(--world-scale, 1));
   }
   100% {
-    transform: translate(-2px, 2px);
+    transform: translate(calc(var(--world-x, 0px) - 2px), calc(var(--world-y, 0px) + 2px)) scale(var(--world-scale, 1));
   }
 }
 

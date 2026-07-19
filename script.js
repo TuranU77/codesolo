@@ -25,11 +25,14 @@ const apps = [
 const gameInfoContent = document.getElementById("game-info-content");
 const year = document.getElementById("year");
 const desktop = document.getElementById("desktop");
+const impactWorld = document.getElementById("impact-world");
+const fpsHud = document.getElementById("fps-hud");
 const taskbar = document.getElementById("taskbar");
 const bugblasterFile = document.getElementById("bugblaster-file");
 const contactMail = document.getElementById("contact-mail");
 const maxWindowHits = 5;
 const autoRepairDelay = 3400;
+const aimSensitivity = 1;
 const blastSoundUrl = "./assets/gun_1.mp3";
 const destroySoundUrl = "./assets/glass.mp3";
 
@@ -53,6 +56,9 @@ let blastSoundPool = [];
 let blastSoundIndex = 0;
 let destroySoundPool = [];
 let destroySoundIndex = 0;
+let worldX = 0;
+let worldY = 0;
+let weaponFlashTimer = null;
 
 function renderAppWindows() {
   document.querySelectorAll(".app-window").forEach((win) => {
@@ -236,17 +242,88 @@ function enableDesktopFileDragging() {
   });
 }
 
+function setWorldPan(nextX, nextY) {
+  const maxPanX = Math.round(window.innerWidth * 0.82);
+  const maxPanY = Math.round((window.innerHeight - 56) * 0.82);
+
+  worldX = Math.min(Math.max(nextX, -maxPanX), maxPanX);
+  worldY = Math.min(Math.max(nextY, -maxPanY), maxPanY);
+  desktop.style.setProperty("--world-x", `${worldX}px`);
+  desktop.style.setProperty("--world-y", `${worldY}px`);
+  impactWorld.style.setProperty("--world-x", `${worldX}px`);
+  impactWorld.style.setProperty("--world-y", `${worldY}px`);
+}
+
+function resetWorldPan() {
+  worldX = 0;
+  worldY = 0;
+  desktop.style.removeProperty("--world-x");
+  desktop.style.removeProperty("--world-y");
+  impactWorld.style.removeProperty("--world-x");
+  impactWorld.style.removeProperty("--world-y");
+}
+
+function getCenterAimPoint() {
+  return {
+    x: Math.round(window.innerWidth / 2),
+    y: Math.round((window.innerHeight - 56) / 2)
+  };
+}
+
+function getWorldPoint(clientX, clientY) {
+  const rect = desktop.getBoundingClientRect();
+  const scaleX = rect.width / desktop.offsetWidth || 1;
+  const scaleY = rect.height / desktop.offsetHeight || 1;
+
+  return {
+    x: (clientX - rect.left) / scaleX,
+    y: (clientY - rect.top) / scaleY
+  };
+}
+
+function requestGamePointerLock() {
+  if (document.pointerLockElement || !desktop.requestPointerLock) return;
+
+  const lockRequest = desktop.requestPointerLock();
+  if (lockRequest?.catch) {
+    lockRequest.catch(() => {});
+  }
+}
+
+function getAimEvent() {
+  const center = getCenterAimPoint();
+  const clientX = center.x;
+  const clientY = center.y;
+  const hiddenHud = fpsHud.style.display;
+
+  fpsHud.style.display = "none";
+  const target = document.elementFromPoint(clientX, clientY) || desktop;
+  fpsHud.style.display = hiddenHud;
+
+  return { clientX, clientY, target };
+}
+
 function setChaosMode(shouldEnable) {
   chaosMode = shouldEnable;
   document.body.classList.toggle("chaos-mode", chaosMode);
+  document.body.classList.toggle("fps-mode", chaosMode);
+  desktop.classList.toggle("fps-world", chaosMode);
+  fpsHud.setAttribute("aria-hidden", chaosMode ? "false" : "true");
   bugblasterFile.classList.toggle("active", chaosMode);
   if (chaosExitButton) {
     chaosExitButton.classList.toggle("hidden", !chaosMode);
   }
   if (chaosMode) {
+    resetWorldPan();
     scheduleAutoRepair();
   }
-  if (!chaosMode) stopAutoFire();
+  if (!chaosMode) {
+    stopAutoFire();
+    resetWorldPan();
+    if (document.pointerLockElement === desktop) {
+      document.exitPointerLock();
+    }
+  }
 }
 
 function playBlastSound() {
@@ -282,20 +359,28 @@ function playDestroySound() {
 }
 
 function addBlastMark(event) {
-  const rect = desktop.getBoundingClientRect();
+  const point = getWorldPoint(event.clientX, event.clientY);
   const mark = document.createElement("span");
   const size = 28 + Math.round(Math.random() * 14);
 
   mark.className = "blast-mark";
-  mark.style.left = `${event.clientX - rect.left}px`;
-  mark.style.top = `${event.clientY - rect.top}px`;
+  mark.style.left = `${point.x}px`;
+  mark.style.top = `${point.y}px`;
   mark.style.setProperty("--blast-size", `${size}px`);
   mark.style.setProperty("--blast-rotation", `${Math.round(Math.random() * 360)}deg`);
-  desktop.appendChild(mark);
+  impactWorld.appendChild(mark);
 
   desktop.classList.remove("blast-shake");
   void desktop.offsetWidth;
   desktop.classList.add("blast-shake");
+}
+
+function flashWeapon() {
+  document.body.classList.add("weapon-firing");
+  window.clearTimeout(weaponFlashTimer);
+  weaponFlashTimer = window.setTimeout(() => {
+    document.body.classList.remove("weapon-firing");
+  }, 70);
 }
 
 function destroyWindow(win) {
@@ -367,8 +452,11 @@ function damageWindow(event) {
 
 function fireBlast() {
   if (!chaosMode || !isAutoFiring || !lastBlastEvent) return;
-  damageWindow(lastBlastEvent);
-  addBlastMark(lastBlastEvent);
+  const shotEvent = getAimEvent();
+
+  damageWindow(shotEvent);
+  addBlastMark(shotEvent);
+  flashWeapon();
   playBlastSound();
   scheduleAutoRepair();
 }
@@ -376,8 +464,10 @@ function fireBlast() {
 function startAutoFire(event) {
   if (!chaosMode) return;
   if (event.target.closest("#bugblaster-file")) return;
+  if (event.target.closest("#taskbar")) return;
   if (isAutoFiring) return;
 
+  requestGamePointerLock();
   event.preventDefault();
   event.stopPropagation();
   isAutoFiring = true;
@@ -401,6 +491,8 @@ function scheduleAutoRepair() {
 function repairDesktop() {
   window.clearTimeout(autoRepairTimer);
   autoRepairTimer = null;
+  window.clearTimeout(weaponFlashTimer);
+  document.body.classList.remove("weapon-firing");
   document.querySelectorAll(".blast-mark").forEach((mark) => mark.remove());
   document.querySelectorAll(".window-shard").forEach((shard) => shard.remove());
   document.querySelectorAll(".window").forEach((win) => {
@@ -435,15 +527,22 @@ function enableChaosMode() {
       return;
     }
     setChaosMode(true);
+    requestGamePointerLock();
   });
 
-  desktop.addEventListener(
+  window.addEventListener(
     "pointerdown",
     (event) => {
       startAutoFire(event);
     },
     true
   );
+
+  window.addEventListener("mousemove", (event) => {
+    if (!chaosMode) return;
+    setWorldPan(worldX - event.movementX * aimSensitivity, worldY - event.movementY * aimSensitivity);
+    scheduleAutoRepair();
+  });
 
   desktop.addEventListener("pointermove", (event) => {
     if (!isAutoFiring) return;
@@ -452,6 +551,11 @@ function enableChaosMode() {
 
   window.addEventListener("pointerup", stopAutoFire);
   window.addEventListener("blur", stopAutoFire);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && chaosMode) {
+      repairDesktop();
+    }
+  });
 }
 
 renderAppWindows();

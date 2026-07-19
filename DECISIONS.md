@@ -42,6 +42,22 @@ This log captures decisions that should survive across future editing sessions.
 - The `GUN.EXE` file remains under windows (`z-index` below focused
   windows), starts on a freer desktop area, and can be dragged when visible.
 - The `GUN.EXE` desktop file uses a simple CSS pixel gun icon.
+- FPS overlay test: activating `GUN.EXE` shows a fixed center crosshair and a
+  placeholder weapon at the bottom center. Mouse movement pans the desktop world
+  under the crosshair, including during continuous fire. Escape also exits.
+- FPS weapon art uses separate Desktop-supplied frames:
+  `assets/gun_idle.png` for stillness and `assets/gun_fire.png` for the short
+  firing flash.
+- Bullet marks live in a separate fixed `impact-layer` with a transformed
+  `impact-world`. This keeps marks from being clipped by the desktop while still
+  anchoring them to the hit target as the world pans under the crosshair.
+- FPS firing listens on the full window and temporarily ignores the HUD during
+  target lookup so shots are not limited to the transformed desktop area.
+- Pointer lock is requested on `GUN.EXE` start and again on the first shot so the
+  browser can keep mouse movement bounded like a game when supported.
+- The FPS experiment uses a strict fixed-center crosshair. Shots always resolve
+  from the screen center; mouse movement pans the desktop world underneath.
+  Without pointer lock, browser edges can still physically limit mouse movement.
 - Contact email links are assembled from parts in JavaScript to avoid exposing
   a plain email address or plain `mailto:` URL in static HTML.
 
