@@ -22,52 +22,54 @@ const apps = [
   }
 ];
 
-const appGrid = document.getElementById("app-grid");
-const privacyControls = document.getElementById("privacy-controls");
-const privacySourceLink = document.getElementById("privacy-source-link");
 const gameInfoContent = document.getElementById("game-info-content");
 const year = document.getElementById("year");
 const desktop = document.getElementById("desktop");
 const taskbar = document.getElementById("taskbar");
+const bugblasterFile = document.getElementById("bugblaster-file");
+const contactMail = document.getElementById("contact-mail");
+const maxWindowHits = 5;
+const autoRepairDelay = 3400;
+const blastSoundUrl = "./assets/gun_1.mp3";
+const destroySoundUrl = "./assets/glass.mp3";
 
 year.textContent = new Date().getFullYear();
 
-apps.forEach((app, index) => {
-  const card = document.createElement("article");
-  card.className = "app-card";
+function renderContactMail() {
+  const contact = ["design", "usuk", "de"];
+  const address = `${contact[0]}@${contact[1]}.${contact[2]}`;
 
-  card.innerHTML = `
-    <h3 class="app-name">${app.name}</h3>
-    <p class="app-tagline">${app.tagline}</p>
-    <div class="app-links">
-      <a class="chip" href="${app.appStoreUrl}" target="_blank" rel="noreferrer noopener">App Store</a>
-      <button class="chip js-open-info" type="button" data-app-index="${index}">Open Info</button>
-    </div>
-  `;
-
-  appGrid.appendChild(card);
-});
-
-function setPolicy(url, appName) {
-  privacySourceLink.href = url;
-  privacySourceLink.textContent = `Open full policy (${appName})`;
+  contactMail.href = `${["mai", "lto"].join("")}:${address}`;
+  contactMail.textContent = address;
 }
 
-function renderPrivacyTabs() {
-  apps.forEach((app, index) => {
-    const tab = document.createElement("button");
-    tab.type = "button";
-    tab.className = "privacy-tab";
-    tab.textContent = app.name;
-    tab.addEventListener("click", () => {
-      setPolicy(app.privacyUrl, app.name);
-      document.querySelectorAll(".privacy-tab").forEach((btn) => btn.classList.remove("active"));
-      tab.classList.add("active");
-    });
-    if (index === 0) tab.classList.add("active");
-    privacyControls.appendChild(tab);
+let chaosMode = false;
+let isAutoFiring = false;
+let autoFireTimer = null;
+let lastBlastEvent = null;
+let autoRepairTimer = null;
+let chaosExitButton = null;
+let blastSoundPool = [];
+let blastSoundIndex = 0;
+let destroySoundPool = [];
+let destroySoundIndex = 0;
+
+function renderAppWindows() {
+  document.querySelectorAll(".app-window").forEach((win) => {
+    const appIndex = Number(win.dataset.appIndex);
+    const app = apps[appIndex];
+    const body = win.querySelector(".app-window-body");
+
+    body.innerHTML = `
+      <h3 class="app-name">${app.name}</h3>
+      <p class="app-tagline">${app.tagline}</p>
+      <div class="app-links">
+        <a class="chip" href="${app.appStoreUrl}" target="_blank" rel="noreferrer noopener">App Store</a>
+        <a class="chip" href="${app.privacyUrl}" target="_blank" rel="noreferrer noopener">Privacy</a>
+        <button class="chip js-open-info" type="button" data-app-index="${appIndex}">Info</button>
+      </div>
+    `;
   });
-  setPolicy(apps[0].privacyUrl, apps[0].name);
 }
 
 let topZ = 20;
@@ -88,6 +90,7 @@ function buildTaskbar() {
     button.dataset.window = win.dataset.window;
     button.textContent = win.querySelector(".titlebar p").textContent;
     button.addEventListener("click", () => {
+      if (win.classList.contains("destroyed") || win.classList.contains("shattering")) return;
       win.classList.remove("hidden");
       setMinimized(win, false);
       focusWindow(win);
@@ -149,7 +152,7 @@ function enableInfoButtons() {
 }
 
 function enableDragging() {
-  if (window.matchMedia("(max-width: 900px)").matches) return;
+  if (window.matchMedia("(max-width: 700px)").matches) return;
 
   document.querySelectorAll(".window").forEach((win) => {
     const handle = win.querySelector(".handle");
@@ -158,7 +161,9 @@ function enableDragging() {
     let startY = 0;
 
     handle.addEventListener("mousedown", (event) => {
+      if (chaosMode) return;
       if (event.target.closest(".action-btn")) return;
+      if (win.classList.contains("destroyed") || win.classList.contains("shattering")) return;
       isDragging = true;
       focusWindow(win);
       startX = event.clientX - win.offsetLeft;
@@ -183,9 +188,278 @@ function enableDragging() {
   });
 }
 
+function enableDesktopFileDragging() {
+  if (window.matchMedia("(max-width: 700px)").matches) return;
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let moved = false;
+
+  bugblasterFile.addEventListener("pointerdown", (event) => {
+    if (chaosMode) return;
+
+    isDragging = true;
+    moved = false;
+    startX = event.clientX - bugblasterFile.offsetLeft;
+    startY = event.clientY - bugblasterFile.offsetTop;
+    bugblasterFile.setPointerCapture(event.pointerId);
+    document.body.style.userSelect = "none";
+  });
+
+  bugblasterFile.addEventListener("pointermove", (event) => {
+    if (!isDragging) return;
+
+    const maxLeft = desktop.clientWidth - bugblasterFile.offsetWidth;
+    const maxTop = desktop.clientHeight - bugblasterFile.offsetHeight;
+    const nextLeft = Math.min(Math.max(0, event.clientX - startX), maxLeft);
+    const nextTop = Math.min(Math.max(0, event.clientY - startY), maxTop);
+
+    if (Math.abs(nextLeft - bugblasterFile.offsetLeft) > 2 || Math.abs(nextTop - bugblasterFile.offsetTop) > 2) {
+      moved = true;
+    }
+
+    bugblasterFile.style.left = `${nextLeft}px`;
+    bugblasterFile.style.top = `${nextTop}px`;
+  });
+
+  bugblasterFile.addEventListener("pointerup", (event) => {
+    isDragging = false;
+    document.body.style.userSelect = "";
+    bugblasterFile.dataset.dragged = moved ? "true" : "false";
+    window.setTimeout(() => {
+      bugblasterFile.dataset.dragged = "false";
+    }, 180);
+    if (bugblasterFile.hasPointerCapture(event.pointerId)) {
+      bugblasterFile.releasePointerCapture(event.pointerId);
+    }
+  });
+}
+
+function setChaosMode(shouldEnable) {
+  chaosMode = shouldEnable;
+  document.body.classList.toggle("chaos-mode", chaosMode);
+  bugblasterFile.classList.toggle("active", chaosMode);
+  if (chaosExitButton) {
+    chaosExitButton.classList.toggle("hidden", !chaosMode);
+  }
+  if (chaosMode) {
+    scheduleAutoRepair();
+  }
+  if (!chaosMode) stopAutoFire();
+}
+
+function playBlastSound() {
+  if (!blastSoundPool.length) {
+    blastSoundPool = Array.from({ length: 8 }, () => {
+      const audio = new Audio(blastSoundUrl);
+      audio.preload = "auto";
+      audio.volume = 0.78;
+      return audio;
+    });
+  }
+
+  const audio = blastSoundPool[blastSoundIndex];
+  blastSoundIndex = (blastSoundIndex + 1) % blastSoundPool.length;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+}
+
+function playDestroySound() {
+  if (!destroySoundPool.length) {
+    destroySoundPool = Array.from({ length: 4 }, () => {
+      const audio = new Audio(destroySoundUrl);
+      audio.preload = "auto";
+      audio.volume = 1;
+      return audio;
+    });
+  }
+
+  const audio = destroySoundPool[destroySoundIndex];
+  destroySoundIndex = (destroySoundIndex + 1) % destroySoundPool.length;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+}
+
+function addBlastMark(event) {
+  const rect = desktop.getBoundingClientRect();
+  const mark = document.createElement("span");
+  const size = 28 + Math.round(Math.random() * 14);
+
+  mark.className = "blast-mark";
+  mark.style.left = `${event.clientX - rect.left}px`;
+  mark.style.top = `${event.clientY - rect.top}px`;
+  mark.style.setProperty("--blast-size", `${size}px`);
+  mark.style.setProperty("--blast-rotation", `${Math.round(Math.random() * 360)}deg`);
+  desktop.appendChild(mark);
+
+  desktop.classList.remove("blast-shake");
+  void desktop.offsetWidth;
+  desktop.classList.add("blast-shake");
+}
+
+function destroyWindow(win) {
+  if (win.classList.contains("destroyed") || win.classList.contains("shattering")) return;
+
+  const rect = win.getBoundingClientRect();
+  const desktopRect = desktop.getBoundingClientRect();
+  const left = rect.left - desktopRect.left;
+  const top = rect.top - desktopRect.top;
+  const tileSize = 24;
+  const rows = Math.ceil(rect.height / tileSize);
+  const cols = Math.ceil(rect.width / tileSize);
+
+  win.dataset.originalLeft = win.style.left;
+  win.dataset.originalTop = win.style.top;
+  win.dataset.originalZ = win.style.zIndex;
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const shard = document.createElement("span");
+      const shardWidth = Math.min(tileSize, rect.width - col * tileSize);
+      const shardHeight = Math.min(tileSize, rect.height - row * tileSize);
+      const isTitleShard = row * tileSize < 34;
+
+      shard.className = `window-shard ${isTitleShard ? "title-shard" : "body-shard"}`;
+      shard.style.left = `${left + col * tileSize}px`;
+      shard.style.top = `${top + row * tileSize}px`;
+      shard.style.width = `${shardWidth + 1}px`;
+      shard.style.height = `${shardHeight + 1}px`;
+      shard.style.setProperty("--fall-x", `${-320 + Math.random() * 640}px`);
+      shard.style.setProperty("--fall-pop-x", `${-140 + Math.random() * 280}px`);
+      shard.style.setProperty("--fall-pop-y", `${-90 - Math.random() * 110}px`);
+      shard.style.setProperty("--fall-y", `${desktop.clientHeight - top + 160 + Math.random() * 340}px`);
+      shard.style.setProperty("--fall-rot", `${-180 + Math.random() * 360}deg`);
+      shard.style.setProperty("--fall-delay", `${Math.random() * 120}ms`);
+      shard.style.setProperty("--fall-duration", `${820 + Math.random() * 760}ms`);
+      desktop.appendChild(shard);
+    }
+  }
+
+  win.classList.remove("damaged", "minimized");
+  win.classList.add("shattering");
+  playDestroySound();
+  win.style.setProperty("--destroy-x", `${Math.random() > 0.5 ? "-" : ""}${60 + Math.round(Math.random() * 100)}px`);
+  win.style.setProperty("--destroy-y", `${desktop.clientHeight - top + 160}px`);
+  win.style.setProperty("--destroy-rot", `${Math.random() > 0.5 ? "-" : ""}${22 + Math.round(Math.random() * 18)}deg`);
+  window.setTimeout(() => {
+    if (win.classList.contains("shattering")) {
+      win.classList.remove("shattering");
+      win.classList.add("destroyed");
+    }
+  }, 1050);
+}
+
+function damageWindow(event) {
+  const win = event.target.closest(".window");
+  if (!win) return;
+  if (win.dataset.window === "bugblaster") return;
+  if (win.classList.contains("destroyed") || win.classList.contains("shattering")) return;
+
+  const nextHits = Number(win.dataset.hits || 0) + 1;
+  win.dataset.hits = String(nextHits);
+  win.classList.add("damaged");
+
+  if (nextHits >= maxWindowHits) {
+    destroyWindow(win);
+  }
+}
+
+function fireBlast() {
+  if (!chaosMode || !isAutoFiring || !lastBlastEvent) return;
+  damageWindow(lastBlastEvent);
+  addBlastMark(lastBlastEvent);
+  playBlastSound();
+  scheduleAutoRepair();
+}
+
+function startAutoFire(event) {
+  if (!chaosMode) return;
+  if (event.target.closest("#bugblaster-file")) return;
+  if (isAutoFiring) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  isAutoFiring = true;
+  lastBlastEvent = event;
+  fireBlast();
+  autoFireTimer = window.setInterval(fireBlast, 65);
+}
+
+function stopAutoFire() {
+  isAutoFiring = false;
+  lastBlastEvent = null;
+  window.clearInterval(autoFireTimer);
+  autoFireTimer = null;
+}
+
+function scheduleAutoRepair() {
+  window.clearTimeout(autoRepairTimer);
+  autoRepairTimer = window.setTimeout(repairDesktop, autoRepairDelay);
+}
+
+function repairDesktop() {
+  window.clearTimeout(autoRepairTimer);
+  autoRepairTimer = null;
+  document.querySelectorAll(".blast-mark").forEach((mark) => mark.remove());
+  document.querySelectorAll(".window-shard").forEach((shard) => shard.remove());
+  document.querySelectorAll(".window").forEach((win) => {
+    win.classList.remove("damaged", "shattering", "destroyed");
+    win.dataset.hits = "0";
+    win.style.removeProperty("--destroy-x");
+    win.style.removeProperty("--destroy-y");
+    win.style.removeProperty("--destroy-rot");
+    if (win.dataset.originalLeft) {
+      win.style.left = win.dataset.originalLeft;
+      win.style.top = win.dataset.originalTop;
+    }
+    if (win.dataset.originalZ) {
+      win.style.zIndex = win.dataset.originalZ;
+    }
+  });
+  setChaosMode(false);
+  stopAutoFire();
+}
+
+function enableChaosMode() {
+  chaosExitButton = document.createElement("button");
+  chaosExitButton.className = "task-btn chaos-exit hidden";
+  chaosExitButton.type = "button";
+  chaosExitButton.textContent = "EXIT GUN.EXE";
+  chaosExitButton.addEventListener("click", repairDesktop);
+  taskbar.appendChild(chaosExitButton);
+
+  bugblasterFile.addEventListener("dblclick", (event) => {
+    if (bugblasterFile.dataset.dragged === "true") {
+      event.preventDefault();
+      return;
+    }
+    setChaosMode(true);
+  });
+
+  desktop.addEventListener(
+    "pointerdown",
+    (event) => {
+      startAutoFire(event);
+    },
+    true
+  );
+
+  desktop.addEventListener("pointermove", (event) => {
+    if (!isAutoFiring) return;
+    lastBlastEvent = event;
+  });
+
+  window.addEventListener("pointerup", stopAutoFire);
+  window.addEventListener("blur", stopAutoFire);
+}
+
+renderAppWindows();
+renderContactMail();
 buildTaskbar();
-renderPrivacyTabs();
 enableWindowActions();
 enableInfoButtons();
 enableDragging();
+enableDesktopFileDragging();
+enableChaosMode();
 document.querySelectorAll(".window").forEach((win) => focusWindow(win));

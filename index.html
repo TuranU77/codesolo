@@ -31,34 +31,37 @@
         </div>
       </section>
 
-      <section class="window" data-window="apps" style="left: 44vw; top: 10vh; width: 560px">
+      <section class="window app-window" data-window="hup" data-app-index="0" style="left: 44vw; top: 10vh; width: 340px">
         <header class="titlebar handle">
-          <p>APPS-REGISTRY.DAT</p>
+          <p>HUP.APP</p>
           <div class="window-actions">
             <button type="button" class="action-btn" data-action="minimize" aria-label="Minimize">_</button>
             <button type="button" class="action-btn" data-action="close" aria-label="Close">x</button>
           </div>
         </header>
-        <div class="window-body">
-          <p>All apps with direct App Store and privacy links:</p>
-          <div id="app-grid" class="app-grid" aria-live="polite"></div>
-        </div>
+        <div class="window-body app-window-body"></div>
       </section>
 
-      <section class="window" data-window="privacy" style="left: 12vw; top: 45vh; width: 760px">
+      <section class="window app-window" data-window="lunio" data-app-index="1" style="left: 8vw; top: 44vh; width: 380px">
         <header class="titlebar handle">
-          <p>PRIVACY-VIEWER.DLL</p>
+          <p>LUNIO.APP</p>
           <div class="window-actions">
             <button type="button" class="action-btn" data-action="minimize" aria-label="Minimize">_</button>
             <button type="button" class="action-btn" data-action="close" aria-label="Close">x</button>
           </div>
         </header>
-        <div class="window-body">
-          <div id="privacy-controls" class="privacy-controls"></div>
-          <p class="privacy-placeholder">
-            <a id="privacy-source-link" href="#" target="_blank" rel="noreferrer noopener">Open full policy</a>
-          </p>
-        </div>
+        <div class="window-body app-window-body"></div>
+      </section>
+
+      <section class="window app-window" data-window="wolf" data-app-index="2" style="left: 46vw; top: 48vh; width: 360px">
+        <header class="titlebar handle">
+          <p>WOLF.APP</p>
+          <div class="window-actions">
+            <button type="button" class="action-btn" data-action="minimize" aria-label="Minimize">_</button>
+            <button type="button" class="action-btn" data-action="close" aria-label="Close">x</button>
+          </div>
+        </header>
+        <div class="window-body app-window-body"></div>
       </section>
 
       <section class="window hidden" data-window="info" style="left: 38vw; top: 28vh; width: 460px">
@@ -85,6 +88,13 @@
         </div>
       </section>
 
+      <button class="desktop-file" id="bugblaster-file" type="button" style="left: 4vw; top: 64vh" aria-label="Open GUN.EXE">
+        <span class="file-icon" aria-hidden="true">
+          <span class="gun-icon"></span>
+        </span>
+        <span class="file-label">GUN.EXE</span>
+      </button>
+
       <section class="window" data-window="contact" style="left: 56vw; top: 56vh; width: 360px">
         <header class="titlebar handle">
           <p>CONTACT.INI</p>
@@ -94,7 +104,7 @@
           </div>
         </header>
         <div class="window-body">
-          <p>Mail: <a href="mailto:design@usuk.de">design@usuk.de</a></p>
+          <p>Mail: <a id="contact-mail" href="#" data-contact-link>show contact</a></p>
           <p>© <span id="year"></span> Code Solo</p>
         </div>
       </section>

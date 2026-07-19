@@ -25,6 +25,10 @@ body {
   overflow: hidden;
 }
 
+body.chaos-mode {
+  cursor: crosshair;
+}
+
 .desktop {
   position: relative;
   width: 100vw;
@@ -34,6 +38,10 @@ body {
     linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
   background-size: 26px 26px;
   overflow: hidden;
+}
+
+.desktop.blast-shake {
+  animation: blast-shake 120ms steps(2, end);
 }
 
 .window {
@@ -56,6 +64,33 @@ body {
 
 .window.minimized .window-body {
   display: none;
+}
+
+.window.damaged {
+  animation: damage-pop 90ms steps(2, end);
+}
+
+.window.shattering {
+  pointer-events: none;
+  transform-origin: 50% 35%;
+  animation: window-fall 1050ms cubic-bezier(0.12, 0.8, 0.28, 1) forwards;
+}
+
+.window.shattering::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    linear-gradient(38deg, transparent 0 48%, #050505 49% 51%, transparent 52%),
+    linear-gradient(124deg, transparent 0 46%, #050505 47% 49%, transparent 50%),
+    linear-gradient(82deg, transparent 0 58%, #050505 59% 61%, transparent 62%);
+  pointer-events: none;
+}
+
+.window.destroyed {
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .titlebar {
@@ -124,17 +159,6 @@ h1 {
   padding: 0;
 }
 
-.app-grid {
-  display: grid;
-  gap: 0.6rem;
-}
-
-.app-card {
-  border: 2px solid #000;
-  background: #fff;
-  padding: 0.55rem;
-}
-
 .app-name {
   margin: 0 0 0.3rem;
   font-size: 1.05rem;
@@ -173,38 +197,6 @@ a {
   font-weight: 700;
 }
 
-.privacy-controls {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.55rem;
-}
-
-.privacy-tab {
-  border: 2px solid #000;
-  background: #f4f4f4;
-  color: #000;
-  font: inherit;
-  padding: 0.3rem 0.5rem;
-  cursor: pointer;
-}
-
-.privacy-tab.active {
-  background: #000;
-  color: #fff;
-}
-
-.privacy-placeholder {
-  margin: 0;
-  padding: 0.55rem;
-  border: 2px solid #000;
-  background: #fff;
-}
-
-.privacy-source {
-  margin: 0.45rem 0 0;
-}
-
 .taskbar {
   position: fixed;
   left: 0;
@@ -237,7 +229,198 @@ a {
   color: #fff;
 }
 
-@media (max-width: 900px) {
+.task-btn.hidden {
+  display: none;
+}
+
+.chaos-exit {
+  background: #111;
+  color: #fff;
+}
+
+.desktop-file {
+  position: absolute;
+  width: 112px;
+  border: 0;
+  background: transparent;
+  color: #050505;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: center;
+  cursor: move;
+  user-select: none;
+  z-index: 10;
+}
+
+.desktop-file:focus,
+.desktop-file:focus-visible {
+  outline: 0;
+}
+
+.desktop-file.active .file-label,
+.desktop-file:hover .file-label {
+  background: #050505;
+  color: #fff;
+}
+
+.file-icon {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 52px;
+  margin: 0 auto 0.35rem;
+  border: 3px solid #050505;
+  background: #f4f4f4;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.file-icon::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 17px;
+  height: 17px;
+  border-left: 3px solid #050505;
+  border-bottom: 3px solid #050505;
+  background: #d7d7d7;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.gun-icon {
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  width: 21px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  background: #050505;
+  box-shadow:
+    10px 0 0 -3px #050505,
+    17px 1px 0 -4px #050505,
+    -5px 3px 0 -3px #050505;
+}
+
+.gun-icon::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 7px;
+  width: 7px;
+  height: 12px;
+  background: #050505;
+  transform: skew(-12deg);
+}
+
+.gun-icon::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 7px;
+  width: 6px;
+  height: 4px;
+  border: 2px solid #050505;
+  border-top: 0;
+  background: transparent;
+}
+
+.file-label {
+  display: inline-block;
+  padding: 0.1rem 0.22rem;
+}
+
+.blast-mark {
+  position: absolute;
+  width: var(--blast-size, 24px);
+  height: var(--blast-size, 24px);
+  transform: translate(-50%, -50%) rotate(var(--blast-rotation, 0deg));
+  background: url("./assets/bullet-hole.svg") center / contain no-repeat;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.window-shard {
+  position: absolute;
+  border: 1px solid #050505;
+  background-color: #f4f4f4;
+  box-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  z-index: 9998;
+  image-rendering: pixelated;
+  animation: shard-fall var(--fall-duration, 900ms) steps(8, end) var(--fall-delay, 0ms) forwards;
+}
+
+.window-shard.title-shard {
+  background-color: #0f0f0f;
+}
+
+.window-shard.body-shard:nth-child(3n) {
+  background-color: #fff;
+}
+
+.window-shard.body-shard:nth-child(5n) {
+  background-color: #d7d7d7;
+}
+
+@keyframes blast-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(3px, -2px);
+  }
+  100% {
+    transform: translate(-2px, 2px);
+  }
+}
+
+@keyframes damage-pop {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-2px, 2px);
+  }
+  100% {
+    transform: translate(2px, -1px);
+  }
+}
+
+@keyframes window-fall {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-8px, -10px) rotate(-2deg) scale(1.015);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--destroy-x, 90px), var(--destroy-y, 900px)) rotate(var(--destroy-rot, 32deg)) scale(0.84);
+  }
+}
+
+@keyframes shard-fall {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(var(--fall-pop-x, calc(var(--fall-x) * 0.18)), var(--fall-pop-y, -28px)) rotate(calc(var(--fall-rot) * 0.32)) scale(1.08);
+  }
+  48% {
+    opacity: 1;
+    transform: translate(calc(var(--fall-x) * 0.62), calc(var(--fall-y) * 0.22)) rotate(calc(var(--fall-rot) * 0.72)) scale(0.92);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--fall-x), var(--fall-y)) rotate(var(--fall-rot)) scale(0.72);
+  }
+}
+
+@media (max-width: 700px) {
   body {
     overflow: auto;
   }
@@ -255,6 +438,14 @@ a {
     width: calc(100vw - 2rem) !important;
     max-width: none;
     margin: 0.8rem auto 0;
+  }
+
+  .desktop-file {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    display: block;
+    margin: 0.9rem auto 0;
   }
 
   .titlebar {

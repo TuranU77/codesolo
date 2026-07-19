@@ -74,11 +74,18 @@
         <h3>Contact</h3>
         <p>
           If you have any questions, contact us at:
-          <a href="mailto:design@usuk.de">design@usuk.de</a>
+          <a id="contact-mail" href="#" data-contact-link>show contact</a>
         </p>
 
         <p>© Code Solo</p>
       </div>
     </main>
+    <script>
+      const contactLink = document.querySelector("[data-contact-link]");
+      const contact = ["design", "usuk", "de"];
+      const address = `${contact[0]}@${contact[1]}.${contact[2]}`;
+      contactLink.href = `${["mai", "lto"].join("")}:${address}`;
+      contactLink.textContent = address;
+    </script>
   </body>
 </html>
