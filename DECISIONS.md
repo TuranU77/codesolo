@@ -28,14 +28,14 @@ This log captures decisions that should survive across future editing sessions.
   cleaner computer-pixel look.
 - Destroyed windows should throw pixel fragments far apart before they drop out
   of the viewport.
-- Bullet marks use the supplied `assets/bullet-hole.svg`, slightly randomized in
-  size and rotation for variation. Its white SVG fills are made transparent so
-  no white box appears around the mark.
+- Bullet marks now use the small supplied `assets/hole.png`, slightly randomized
+  in size and rotation for variation. Prefer this PNG over the earlier SVG for
+  faster repeated rendering.
 - Window destruction uses `assets/glass.mp3`, copied from the user's Desktop,
   separate from the per-shot sound.
-- Per-shot audio is currently `assets/gun_1.mp3`, copied from the user's Desktop
-  as the selected shot sound. The generated Web Audio shot fallback was removed so only the
-  asset is heard for shots.
+- Per-shot audio uses `assets/gun_1.mp3`, copied from the user's Desktop as the
+  selected shot sound. The preferred playback path is decoded Web Audio; HTMLAudio
+  remains only as a local-file fallback if Web Audio asset fetch/decode is blocked.
 - `GUN.EXE` was changed from a window with Arm/Repair buttons into a
   desktop file. Double-clicking starts chaos mode; an `EXIT GUN.EXE` taskbar
   button or a few seconds of idle time repairs the desktop and exits the mode.
@@ -55,9 +55,41 @@ This log captures decisions that should survive across future editing sessions.
   target lookup so shots are not limited to the transformed desktop area.
 - Pointer lock is requested on `GUN.EXE` start and again on the first shot so the
   browser can keep mouse movement bounded like a game when supported.
+- Pointer lock should request `{ unadjustedMovement: true }` first for raw mouse
+  input and fall back to normal pointer lock if unsupported.
 - The FPS experiment uses a strict fixed-center crosshair. Shots always resolve
   from the screen center; mouse movement pans the desktop world underneath.
   Without pointer lock, browser edges can still physically limit mouse movement.
+- Mouse sensitivity is controlled by `aimSensitivity` in `script.js`. `1` is
+  mathematically 1:1; the current prototype uses `1.35` to feel responsive but
+  calmer than the earlier `1.8` test.
+- Each shot should produce a visible optical kick: the desktop shake and weapon
+  recoil use alternating short animation classes so they can retrigger during
+  held-button autofire.
+- Gun-mode latency work: preload the bullet-hole PNG and audio assets, prepare
+  and warm audio before the first shot, prefer decoded Web Audio buffers over
+  HTMLAudio when available, use a fixed pool of small DOM marks with the PNG
+  rather than creating/removing marks or drawing to a full-screen canvas, apply
+  mouse movement in `requestAnimationFrame`, avoid forced layout (`offsetWidth`)
+  during autofire, throttle blast shake, and cap retained bullet marks. The
+  canvas test was slower because each shot dirtied a large composited surface.
+- FPS aiming listens to `pointerrawupdate`, `pointermove`, and `mousemove` with
+  light duplicate filtering, so mouse movement can continue during held-button
+  autofire across different browsers. Gun mode also prevents native drag starts
+  because browser drag behavior can steal movement events during continuous fire.
+- Gun mode shows a small `ESC - EXIT` HUD hint at the screen edge, matching the
+  existing Escape-key exit behavior without opening another window.
+- The yellow pixel grid belongs to the fixed page background, not the transformed
+  desktop world, so the grid stays visible across the whole viewport while
+  aiming pans the windows underneath.
+- Gun mode adds hidden-offscreen programmer error popups as extra targets. They
+  are invisible on the regular website, become visible only in FPS mode, and are
+  placed beyond the initial viewport so the player discovers them by panning.
+  Keep them only slightly outside the first viewport because the 82% pan radius
+  limits what can be centered under the fixed crosshair and therefore shot.
+- When every visible window and every error popup has been destroyed, a large
+  `WIN!` message appears in the center, fades out, and the gun mode repairs and
+  exits automatically.
 - Contact email links are assembled from parts in JavaScript to avoid exposing
   a plain email address or plain `mailto:` URL in static HTML.
 

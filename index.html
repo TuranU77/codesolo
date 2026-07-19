@@ -8,6 +8,9 @@
       name="description"
       content="Official Code Solo site with App Store and privacy policy links."
     />
+    <link rel="preload" href="./assets/hole.png" as="image" />
+    <link rel="preload" href="./assets/gun_1.mp3" as="audio" type="audio/mpeg" />
+    <link rel="preload" href="./assets/glass.mp3" as="audio" type="audio/mpeg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -108,6 +111,8 @@
           <p>© <span id="year"></span> Code Solo</p>
         </div>
       </section>
+
+      <div class="error-target-layer" id="error-target-layer" aria-hidden="true"></div>
     </main>
 
     <div class="impact-layer" id="impact-layer" aria-hidden="true">
@@ -115,6 +120,8 @@
     </div>
 
     <div class="fps-hud" id="fps-hud" aria-hidden="true">
+      <div class="fps-exit-hint">ESC - EXIT</div>
+      <div class="fps-win-message" id="fps-win-message">WIN!</div>
       <div class="crosshair">
         <span class="crosshair-line crosshair-line-top"></span>
         <span class="crosshair-line crosshair-line-right"></span>
@@ -122,8 +129,8 @@
         <span class="crosshair-line crosshair-line-left"></span>
       </div>
       <div class="fps-weapon">
-        <img class="weapon-image weapon-image-idle" src="./assets/gun_idle.png" alt="" />
-        <img class="weapon-image weapon-image-fire" src="./assets/gun_fire.png" alt="" />
+        <img class="weapon-image weapon-image-idle" src="./assets/gun_idle.png" alt="" draggable="false" />
+        <img class="weapon-image weapon-image-fire" src="./assets/gun_fire.png" alt="" draggable="false" />
       </div>
     </div>
 

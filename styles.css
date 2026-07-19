@@ -20,13 +20,18 @@ body {
 
 body {
   font-family: "Courier New", monospace;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 26px 26px;
   color: var(--text);
   overflow: hidden;
 }
 
 body.chaos-mode {
   cursor: none;
+  user-select: none;
 }
 
 body.chaos-mode * {
@@ -39,19 +44,23 @@ body.chaos-mode * {
   height: calc(100vh - 56px);
   transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
   transform-origin: center;
-  background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-  background-size: 26px 26px;
   overflow: hidden;
 }
 
-.desktop.blast-shake {
-  animation: blast-shake 120ms steps(2, end);
+.desktop.blast-shake-a {
+  animation: blast-shake-a 72ms steps(2, end);
+}
+
+.desktop.blast-shake-b {
+  animation: blast-shake-b 72ms steps(2, end);
 }
 
 .desktop.fps-world {
   --world-scale: 1.04;
+}
+
+body.fps-mode .desktop {
+  overflow: visible;
 }
 
 .window {
@@ -339,14 +348,103 @@ a {
   padding: 0.1rem 0.22rem;
 }
 
+.error-target-layer {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  pointer-events: none;
+}
+
+body.fps-mode .error-target-layer {
+  display: block;
+}
+
+.error-target {
+  position: absolute;
+  width: 250px;
+  min-height: 94px;
+  padding: 0;
+  border: 3px solid #050505;
+  background: #f4f4f4;
+  color: #050505;
+  box-shadow: 6px 6px 0 #000;
+  font: inherit;
+  text-align: left;
+  transform: rotate(var(--target-rotation, 0deg));
+  pointer-events: auto;
+}
+
+.error-target::before {
+  content: "!";
+  position: absolute;
+  left: 12px;
+  top: 42px;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #050505;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.error-target-title,
+.error-target-message,
+.error-target-code {
+  display: block;
+}
+
+.error-target-title {
+  padding: 0.28rem 0.45rem;
+  border-bottom: 3px solid #050505;
+  background: #050505;
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.error-target-message {
+  min-height: 42px;
+  padding: 0.45rem 0.5rem 0.1rem 3rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.error-target-code {
+  padding: 0 0.5rem 0.42rem 3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.error-target.damaged {
+  animation: error-hit 90ms steps(2, end);
+}
+
+.error-target.shattering {
+  pointer-events: none;
+  animation: error-target-crash 720ms steps(5, end) forwards;
+}
+
+.error-target.destroyed {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .blast-mark {
   position: absolute;
   width: var(--blast-size, 24px);
   height: var(--blast-size, 24px);
   transform: translate(-50%, -50%) rotate(var(--blast-rotation, 0deg));
-  background: url("./assets/bullet-hole.svg") center / contain no-repeat;
+  background: url("./assets/hole.png") center / contain no-repeat;
+  contain: layout paint style;
   pointer-events: none;
+  will-change: transform;
   z-index: 9999;
+}
+
+.blast-mark.is-idle {
+  display: none;
 }
 
 .impact-layer {
@@ -363,6 +461,8 @@ a {
   height: calc(100vh - 56px);
   transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
   transform-origin: center;
+  contain: layout paint;
+  will-change: transform;
 }
 
 body.fps-mode .impact-world {
@@ -376,6 +476,40 @@ body.fps-mode .impact-world {
 
 body.fps-mode .fps-hud {
   display: block;
+}
+
+.fps-exit-hint {
+  position: fixed;
+  right: 16px;
+  top: 14px;
+  padding: 0.22rem 0.42rem;
+  border: 2px solid #050505;
+  background: #f4f4f4;
+  color: #050505;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  z-index: 10001;
+}
+
+.fps-win-message {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: calc((100vh - 56px) / 2);
+  transform: translate(-50%, -50%);
+  color: #050505;
+  font-size: clamp(4rem, 16vw, 11rem);
+  font-weight: 700;
+  line-height: 0.9;
+  text-shadow: 8px 8px 0 #fff;
+  z-index: 10002;
+}
+
+body.game-won .fps-win-message {
+  display: block;
+  animation: win-fade 1500ms steps(8, end) forwards;
 }
 
 .crosshair {
@@ -432,7 +566,16 @@ body.fps-mode .fps-hud {
   width: min(620px, 78vw);
   height: min(310px, 34vh);
   transform: translateX(-50%);
+  transform-origin: 50% 100%;
   z-index: 9999;
+}
+
+body.weapon-recoil-a .fps-weapon {
+  animation: weapon-kick-a 58ms steps(2, end);
+}
+
+body.weapon-recoil-b .fps-weapon {
+  animation: weapon-kick-b 58ms steps(2, end);
 }
 
 .weapon-image {
@@ -469,6 +612,24 @@ body.weapon-firing .weapon-image-fire {
   animation: shard-fall var(--fall-duration, 900ms) steps(8, end) var(--fall-delay, 0ms) forwards;
 }
 
+.error-target-shard {
+  position: absolute;
+  border: 1px solid #050505;
+  background-color: #f4f4f4;
+  box-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  z-index: 9998;
+  animation: shard-fall var(--fall-duration, 760ms) steps(7, end) var(--fall-delay, 0ms) forwards;
+}
+
+.error-target-shard:nth-child(3n) {
+  background-color: #050505;
+}
+
+.error-target-shard:nth-child(5n) {
+  background-color: #fff;
+}
+
 .window-shard.title-shard {
   background-color: #0f0f0f;
 }
@@ -481,15 +642,103 @@ body.weapon-firing .weapon-image-fire {
   background-color: #d7d7d7;
 }
 
-@keyframes blast-shake {
+@keyframes blast-shake-a {
   0% {
     transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
   }
-  50% {
-    transform: translate(calc(var(--world-x, 0px) + 3px), calc(var(--world-y, 0px) - 2px)) scale(var(--world-scale, 1));
+  34% {
+    transform: translate(calc(var(--world-x, 0px) + 5px), calc(var(--world-y, 0px) - 4px)) scale(var(--world-scale, 1));
+  }
+  67% {
+    transform: translate(calc(var(--world-x, 0px) - 4px), calc(var(--world-y, 0px) + 3px)) scale(var(--world-scale, 1));
   }
   100% {
-    transform: translate(calc(var(--world-x, 0px) - 2px), calc(var(--world-y, 0px) + 2px)) scale(var(--world-scale, 1));
+    transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
+  }
+}
+
+@keyframes blast-shake-b {
+  0% {
+    transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
+  }
+  34% {
+    transform: translate(calc(var(--world-x, 0px) - 5px), calc(var(--world-y, 0px) + 4px)) scale(var(--world-scale, 1));
+  }
+  67% {
+    transform: translate(calc(var(--world-x, 0px) + 4px), calc(var(--world-y, 0px) - 3px)) scale(var(--world-scale, 1));
+  }
+  100% {
+    transform: translate(var(--world-x, 0), var(--world-y, 0)) scale(var(--world-scale, 1));
+  }
+}
+
+@keyframes weapon-kick-a {
+  0% {
+    transform: translateX(-50%) translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(-50%) translateY(10px) rotate(-1deg);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes weapon-kick-b {
+  0% {
+    transform: translateX(-50%) translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(-50%) translateY(9px) rotate(1deg);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes error-hit {
+  0% {
+    transform: rotate(var(--target-rotation, 0deg)) translate(0, 0);
+  }
+  50% {
+    transform: rotate(var(--target-rotation, 0deg)) translate(4px, -2px);
+  }
+  100% {
+    transform: rotate(var(--target-rotation, 0deg)) translate(-3px, 3px);
+  }
+}
+
+@keyframes error-target-crash {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--target-rotation, 0deg)) translate(0, 0) scale(1);
+  }
+  35% {
+    opacity: 1;
+    transform: rotate(calc(var(--target-rotation, 0deg) + 4deg)) translate(-8px, 6px) scale(1.03);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(calc(var(--target-rotation, 0deg) - 9deg)) translate(24px, 72px) scale(0.72);
+  }
+}
+
+@keyframes win-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.12);
   }
 }
 

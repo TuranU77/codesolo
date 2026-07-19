@@ -27,14 +27,79 @@ const year = document.getElementById("year");
 const desktop = document.getElementById("desktop");
 const impactWorld = document.getElementById("impact-world");
 const fpsHud = document.getElementById("fps-hud");
+const errorTargetLayer = document.getElementById("error-target-layer");
 const taskbar = document.getElementById("taskbar");
 const bugblasterFile = document.getElementById("bugblaster-file");
 const contactMail = document.getElementById("contact-mail");
 const maxWindowHits = 5;
+const maxErrorTargetHits = 3;
+const maxBlastMarks = 96;
 const autoRepairDelay = 3400;
-const aimSensitivity = 1;
+const blastShakeCooldown = 45;
+const fpsWorldScale = 1.04;
+const aimSensitivity = 1.35;
 const blastSoundUrl = "./assets/gun_1.mp3";
 const destroySoundUrl = "./assets/glass.mp3";
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+const errorTargets = [
+  {
+    title: "BUILD FAILED",
+    message: "Module not found: ./motivation",
+    left: "108vw",
+    top: "16vh",
+    rotate: "-2deg"
+  },
+  {
+    title: "NULL POINTER",
+    message: "Cannot read properties of undefined coffee.",
+    left: "-22vw",
+    top: "24vh",
+    rotate: "2deg"
+  },
+  {
+    title: "MERGE CONFLICT",
+    message: "<<<<<<< panic.js",
+    left: "106vw",
+    top: "66vh",
+    rotate: "1deg"
+  },
+  {
+    title: "STACK OVERFLOW",
+    message: "RecursionError: too much thinking.",
+    left: "-20vw",
+    top: "76vh",
+    rotate: "-1deg"
+  },
+  {
+    title: "404",
+    message: "Fun not found. Retry?",
+    left: "42vw",
+    top: "-22vh",
+    rotate: "1deg"
+  },
+  {
+    title: "LINTER ALERT",
+    message: "Expected semicolon, found destiny.",
+    left: "64vw",
+    top: "108vh",
+    rotate: "-2deg"
+  },
+  {
+    title: "PROD IS DOWN",
+    message: "It worked on my machine.",
+    left: "112vw",
+    top: "42vh",
+    rotate: "3deg"
+  },
+  {
+    title: "TODO LEAK",
+    message: "fix later escaped containment.",
+    left: "-24vw",
+    top: "52vh",
+    rotate: "-3deg"
+  }
+];
 
 year.textContent = new Date().getFullYear();
 
@@ -46,19 +111,64 @@ function renderContactMail() {
   contactMail.textContent = address;
 }
 
+function renderErrorTargets() {
+  errorTargetLayer.innerHTML = errorTargets
+    .map(
+      (target, index) => `
+        <button
+          class="error-target"
+          type="button"
+          data-error-target
+          data-hits="0"
+          style="left: ${target.left}; top: ${target.top}; --target-rotation: ${target.rotate}"
+        >
+          <span class="error-target-title">${target.title}</span>
+          <span class="error-target-message">${target.message}</span>
+          <span class="error-target-code">ERR_${String(index + 1).padStart(2, "0")}</span>
+        </button>
+      `
+    )
+    .join("");
+}
+
+function resetErrorTargets() {
+  document.querySelectorAll("[data-error-target]").forEach((target) => {
+    target.classList.remove("damaged", "shattering", "destroyed");
+    target.dataset.hits = "0";
+  });
+}
+
 let chaosMode = false;
 let isAutoFiring = false;
+let gameWon = false;
 let autoFireTimer = null;
 let lastBlastEvent = null;
 let autoRepairTimer = null;
 let chaosExitButton = null;
-let blastSoundPool = [];
-let blastSoundIndex = 0;
-let destroySoundPool = [];
-let destroySoundIndex = 0;
+let audioContext = null;
+let audioLoadStarted = false;
+let blastAudioBuffer = null;
+let destroyAudioBuffer = null;
+let fallbackBlastSoundPool = [];
+let fallbackBlastSoundIndex = 0;
+let fallbackDestroySoundPool = [];
+let fallbackDestroySoundIndex = 0;
 let worldX = 0;
 let worldY = 0;
 let weaponFlashTimer = null;
+let blastShakeTimer = null;
+let lastBlastShakeAt = 0;
+let blastShakeVariant = false;
+let weaponRecoilVariant = false;
+let blastMarkPool = [];
+let activeBlastMarks = [];
+let nextBlastMarkIndex = 0;
+let pendingWorldMovementX = 0;
+let pendingWorldMovementY = 0;
+let worldFrameRequested = false;
+let lastAimMovementTime = 0;
+let lastAimMovementX = 0;
+let lastAimMovementY = 0;
 
 function renderAppWindows() {
   document.querySelectorAll(".app-window").forEach((win) => {
@@ -257,10 +367,59 @@ function setWorldPan(nextX, nextY) {
 function resetWorldPan() {
   worldX = 0;
   worldY = 0;
+  pendingWorldMovementX = 0;
+  pendingWorldMovementY = 0;
   desktop.style.removeProperty("--world-x");
   desktop.style.removeProperty("--world-y");
   impactWorld.style.removeProperty("--world-x");
   impactWorld.style.removeProperty("--world-y");
+}
+
+function applyQueuedWorldMovement() {
+  worldFrameRequested = false;
+  if (!chaosMode) {
+    pendingWorldMovementX = 0;
+    pendingWorldMovementY = 0;
+    return;
+  }
+
+  if (pendingWorldMovementX || pendingWorldMovementY) {
+    setWorldPan(
+      worldX - pendingWorldMovementX * aimSensitivity,
+      worldY - pendingWorldMovementY * aimSensitivity
+    );
+    pendingWorldMovementX = 0;
+    pendingWorldMovementY = 0;
+    scheduleAutoRepair();
+  }
+}
+
+function queueWorldMovement(movementX, movementY) {
+  pendingWorldMovementX += movementX;
+  pendingWorldMovementY += movementY;
+  if (worldFrameRequested) return;
+
+  worldFrameRequested = true;
+  window.requestAnimationFrame(applyQueuedWorldMovement);
+}
+
+function handleAimMovement(event) {
+  if (!chaosMode || gameWon) return;
+
+  const movementX = event.movementX || 0;
+  const movementY = event.movementY || 0;
+  if (!movementX && !movementY) return;
+
+  const isDuplicateMovement =
+    event.timeStamp - lastAimMovementTime < 4 &&
+    movementX === lastAimMovementX &&
+    movementY === lastAimMovementY;
+  if (isDuplicateMovement) return;
+
+  lastAimMovementTime = event.timeStamp;
+  lastAimMovementX = movementX;
+  lastAimMovementY = movementY;
+  queueWorldMovement(movementX, movementY);
 }
 
 function getCenterAimPoint() {
@@ -271,22 +430,33 @@ function getCenterAimPoint() {
 }
 
 function getWorldPoint(clientX, clientY) {
-  const rect = desktop.getBoundingClientRect();
-  const scaleX = rect.width / desktop.offsetWidth || 1;
-  const scaleY = rect.height / desktop.offsetHeight || 1;
+  const width = window.innerWidth;
+  const height = window.innerHeight - 56;
+  const scale = chaosMode ? fpsWorldScale : 1;
+  const scaledOffsetX = (1 - scale) * width * 0.5;
+  const scaledOffsetY = (1 - scale) * height * 0.5;
 
   return {
-    x: (clientX - rect.left) / scaleX,
-    y: (clientY - rect.top) / scaleY
+    x: (clientX - worldX - scaledOffsetX) / scale,
+    y: (clientY - worldY - scaledOffsetY) / scale
   };
 }
 
 function requestGamePointerLock() {
   if (document.pointerLockElement || !desktop.requestPointerLock) return;
 
-  const lockRequest = desktop.requestPointerLock();
+  let lockRequest;
+  try {
+    lockRequest = desktop.requestPointerLock({ unadjustedMovement: true });
+  } catch (error) {
+    lockRequest = desktop.requestPointerLock();
+  }
   if (lockRequest?.catch) {
-    lockRequest.catch(() => {});
+    lockRequest.catch((error) => {
+      if (error.name === "NotSupportedError") {
+        desktop.requestPointerLock?.();
+      }
+    });
   }
 }
 
@@ -294,11 +464,7 @@ function getAimEvent() {
   const center = getCenterAimPoint();
   const clientX = center.x;
   const clientY = center.y;
-  const hiddenHud = fpsHud.style.display;
-
-  fpsHud.style.display = "none";
   const target = document.elementFromPoint(clientX, clientY) || desktop;
-  fpsHud.style.display = hiddenHud;
 
   return { clientX, clientY, target };
 }
@@ -314,7 +480,13 @@ function setChaosMode(shouldEnable) {
     chaosExitButton.classList.toggle("hidden", !chaosMode);
   }
   if (chaosMode) {
+    gameWon = false;
+    document.body.classList.remove("game-won");
     resetWorldPan();
+    resetErrorTargets();
+    createBlastMarkPool();
+    prepareAudioPools();
+    warmAudioPools();
     scheduleAutoRepair();
   }
   if (!chaosMode) {
@@ -326,61 +498,162 @@ function setChaosMode(shouldEnable) {
   }
 }
 
+function getAudioContext() {
+  if (!AudioContextClass) return null;
+  if (!audioContext) {
+    audioContext = new AudioContextClass({ latencyHint: "interactive" });
+  }
+  return audioContext;
+}
+
+async function loadAudioBuffer(url) {
+  const context = getAudioContext();
+  if (!context) return null;
+
+  const response = await fetch(url);
+  const buffer = await response.arrayBuffer();
+  return context.decodeAudioData(buffer);
+}
+
+function createFallbackAudioPool(url, size, volume) {
+  return Array.from({ length: size }, () => {
+    const audio = new Audio(url);
+    audio.preload = "auto";
+    audio.volume = volume;
+    audio.load();
+    return audio;
+  });
+}
+
+function prepareFallbackAudioPools() {
+  if (!fallbackBlastSoundPool.length) {
+    fallbackBlastSoundPool = createFallbackAudioPool(blastSoundUrl, 8, 0.78);
+  }
+  if (!fallbackDestroySoundPool.length) {
+    fallbackDestroySoundPool = createFallbackAudioPool(destroySoundUrl, 3, 1);
+  }
+}
+
+function prepareAudioPools() {
+  prepareFallbackAudioPools();
+  if (audioLoadStarted) return;
+
+  audioLoadStarted = true;
+  loadAudioBuffer(blastSoundUrl)
+    .then((buffer) => {
+      blastAudioBuffer = buffer;
+    })
+    .catch(() => {});
+  loadAudioBuffer(destroySoundUrl)
+    .then((buffer) => {
+      destroyAudioBuffer = buffer;
+    })
+    .catch(() => {});
+}
+
+function warmAudioPools() {
+  const context = getAudioContext();
+  prepareAudioPools();
+  if (context?.state === "suspended") {
+    context.resume().catch(() => {});
+  }
+}
+
+function playAudioBuffer(buffer, volume) {
+  const context = getAudioContext();
+  if (!context || !buffer) return;
+
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  source.buffer = buffer;
+  gain.gain.value = volume;
+  source.connect(gain);
+  gain.connect(context.destination);
+  source.start();
+}
+
 function playBlastSound() {
-  if (!blastSoundPool.length) {
-    blastSoundPool = Array.from({ length: 8 }, () => {
-      const audio = new Audio(blastSoundUrl);
-      audio.preload = "auto";
-      audio.volume = 0.78;
-      return audio;
-    });
+  if (blastAudioBuffer) {
+    playAudioBuffer(blastAudioBuffer, 0.78);
+    return;
   }
 
-  const audio = blastSoundPool[blastSoundIndex];
-  blastSoundIndex = (blastSoundIndex + 1) % blastSoundPool.length;
+  const audio = fallbackBlastSoundPool[fallbackBlastSoundIndex];
+  fallbackBlastSoundIndex = (fallbackBlastSoundIndex + 1) % fallbackBlastSoundPool.length;
   audio.currentTime = 0;
   audio.play().catch(() => {});
 }
 
 function playDestroySound() {
-  if (!destroySoundPool.length) {
-    destroySoundPool = Array.from({ length: 4 }, () => {
-      const audio = new Audio(destroySoundUrl);
-      audio.preload = "auto";
-      audio.volume = 1;
-      return audio;
-    });
+  if (destroyAudioBuffer) {
+    playAudioBuffer(destroyAudioBuffer, 1);
+    return;
   }
 
-  const audio = destroySoundPool[destroySoundIndex];
-  destroySoundIndex = (destroySoundIndex + 1) % destroySoundPool.length;
+  const audio = fallbackDestroySoundPool[fallbackDestroySoundIndex];
+  fallbackDestroySoundIndex = (fallbackDestroySoundIndex + 1) % fallbackDestroySoundPool.length;
   audio.currentTime = 0;
   audio.play().catch(() => {});
 }
 
+function createBlastMarkPool() {
+  if (blastMarkPool.length) return;
+
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < maxBlastMarks; index += 1) {
+    const mark = document.createElement("span");
+    mark.className = "blast-mark is-idle";
+    mark.dataset.active = "false";
+    blastMarkPool.push(mark);
+    fragment.appendChild(mark);
+  }
+  impactWorld.appendChild(fragment);
+}
+
+function triggerBlastShake() {
+  const now = performance.now();
+  if (now - lastBlastShakeAt < blastShakeCooldown) return;
+
+  lastBlastShakeAt = now;
+  blastShakeVariant = !blastShakeVariant;
+  desktop.classList.remove("blast-shake-a", "blast-shake-b");
+  desktop.classList.add(blastShakeVariant ? "blast-shake-a" : "blast-shake-b");
+  window.clearTimeout(blastShakeTimer);
+  blastShakeTimer = window.setTimeout(() => {
+    desktop.classList.remove("blast-shake-a", "blast-shake-b");
+  }, 72);
+}
+
 function addBlastMark(event) {
+  createBlastMarkPool();
   const point = getWorldPoint(event.clientX, event.clientY);
-  const mark = document.createElement("span");
+  const mark = blastMarkPool[nextBlastMarkIndex];
   const size = 28 + Math.round(Math.random() * 14);
 
-  mark.className = "blast-mark";
+  nextBlastMarkIndex = (nextBlastMarkIndex + 1) % blastMarkPool.length;
+  if (mark.dataset.active !== "true") {
+    mark.dataset.active = "true";
+    activeBlastMarks.push(mark);
+  }
+
   mark.style.left = `${point.x}px`;
   mark.style.top = `${point.y}px`;
   mark.style.setProperty("--blast-size", `${size}px`);
   mark.style.setProperty("--blast-rotation", `${Math.round(Math.random() * 360)}deg`);
-  impactWorld.appendChild(mark);
+  mark.classList.remove("is-idle");
 
-  desktop.classList.remove("blast-shake");
-  void desktop.offsetWidth;
-  desktop.classList.add("blast-shake");
+  triggerBlastShake();
 }
 
 function flashWeapon() {
+  weaponRecoilVariant = !weaponRecoilVariant;
   document.body.classList.add("weapon-firing");
+  document.body.classList.remove("weapon-recoil-a", "weapon-recoil-b");
+  document.body.classList.add(weaponRecoilVariant ? "weapon-recoil-a" : "weapon-recoil-b");
   window.clearTimeout(weaponFlashTimer);
   weaponFlashTimer = window.setTimeout(() => {
-    document.body.classList.remove("weapon-firing");
-  }, 70);
+    document.body.classList.remove("weapon-firing", "weapon-recoil-a", "weapon-recoil-b");
+  }, 58);
 }
 
 function destroyWindow(win) {
@@ -433,6 +706,7 @@ function destroyWindow(win) {
       win.classList.add("destroyed");
     }
   }, 1050);
+  checkWinCondition();
 }
 
 function damageWindow(event) {
@@ -450,11 +724,99 @@ function damageWindow(event) {
   }
 }
 
+function createErrorTargetShards(target) {
+  const rect = target.getBoundingClientRect();
+  const desktopRect = desktop.getBoundingClientRect();
+  const left = rect.left - desktopRect.left;
+  const top = rect.top - desktopRect.top;
+  const tileSize = 18;
+  const rows = Math.ceil(rect.height / tileSize);
+  const cols = Math.ceil(rect.width / tileSize);
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const shard = document.createElement("span");
+      const shardWidth = Math.min(tileSize, rect.width - col * tileSize);
+      const shardHeight = Math.min(tileSize, rect.height - row * tileSize);
+
+      shard.className = "error-target-shard";
+      shard.style.left = `${left + col * tileSize}px`;
+      shard.style.top = `${top + row * tileSize}px`;
+      shard.style.width = `${shardWidth + 1}px`;
+      shard.style.height = `${shardHeight + 1}px`;
+      shard.style.setProperty("--fall-x", `${-220 + Math.random() * 440}px`);
+      shard.style.setProperty("--fall-pop-y", `${-70 - Math.random() * 110}px`);
+      shard.style.setProperty("--fall-y", `${desktop.clientHeight - top + 110 + Math.random() * 260}px`);
+      shard.style.setProperty("--fall-rot", `${-120 + Math.random() * 240}deg`);
+      shard.style.setProperty("--fall-delay", `${Math.random() * 90}ms`);
+      shard.style.setProperty("--fall-duration", `${620 + Math.random() * 520}ms`);
+      desktop.appendChild(shard);
+    }
+  }
+}
+
+function destroyErrorTarget(target) {
+  if (target.classList.contains("destroyed") || target.classList.contains("shattering")) return;
+
+  createErrorTargetShards(target);
+  target.classList.remove("damaged");
+  target.classList.add("shattering");
+  playDestroySound();
+  window.setTimeout(() => {
+    if (target.classList.contains("shattering")) {
+      target.classList.remove("shattering");
+      target.classList.add("destroyed");
+    }
+  }, 720);
+  checkWinCondition();
+}
+
+function damageErrorTarget(event) {
+  const target = event.target.closest("[data-error-target]");
+  if (!target) return;
+  if (target.classList.contains("destroyed") || target.classList.contains("shattering")) return;
+
+  const nextHits = Number(target.dataset.hits || 0) + 1;
+  target.dataset.hits = String(nextHits);
+  target.classList.remove("damaged");
+  window.requestAnimationFrame(() => {
+    target.classList.add("damaged");
+  });
+
+  if (nextHits >= maxErrorTargetHits) {
+    destroyErrorTarget(target);
+  }
+}
+
+function getVisibleWindowTargets() {
+  return Array.from(document.querySelectorAll(".window")).filter((win) => !win.classList.contains("hidden"));
+}
+
+function isTargetDefeated(target) {
+  return target.classList.contains("destroyed") || target.classList.contains("shattering");
+}
+
+function checkWinCondition() {
+  if (!chaosMode || gameWon) return;
+
+  const windowTargets = getVisibleWindowTargets();
+  const errorTargetElements = Array.from(document.querySelectorAll("[data-error-target]"));
+  const targets = [...windowTargets, ...errorTargetElements];
+  if (!targets.length || targets.some((target) => !isTargetDefeated(target))) return;
+
+  gameWon = true;
+  window.clearTimeout(autoRepairTimer);
+  stopAutoFire();
+  document.body.classList.add("game-won");
+  window.setTimeout(repairDesktop, 1500);
+}
+
 function fireBlast() {
-  if (!chaosMode || !isAutoFiring || !lastBlastEvent) return;
+  if (!chaosMode || gameWon || !isAutoFiring || !lastBlastEvent) return;
   const shotEvent = getAimEvent();
 
   damageWindow(shotEvent);
+  damageErrorTarget(shotEvent);
   addBlastMark(shotEvent);
   flashWeapon();
   playBlastSound();
@@ -462,12 +824,16 @@ function fireBlast() {
 }
 
 function startAutoFire(event) {
-  if (!chaosMode) return;
+  if (!chaosMode || gameWon) return;
   if (event.target.closest("#bugblaster-file")) return;
   if (event.target.closest("#taskbar")) return;
   if (isAutoFiring) return;
 
   requestGamePointerLock();
+  if (event.target.hasPointerCapture?.(event.pointerId)) {
+    event.target.releasePointerCapture(event.pointerId);
+  }
+  warmAudioPools();
   event.preventDefault();
   event.stopPropagation();
   isAutoFiring = true;
@@ -479,6 +845,9 @@ function startAutoFire(event) {
 function stopAutoFire() {
   isAutoFiring = false;
   lastBlastEvent = null;
+  lastAimMovementTime = 0;
+  lastAimMovementX = 0;
+  lastAimMovementY = 0;
   window.clearInterval(autoFireTimer);
   autoFireTimer = null;
 }
@@ -492,9 +861,19 @@ function repairDesktop() {
   window.clearTimeout(autoRepairTimer);
   autoRepairTimer = null;
   window.clearTimeout(weaponFlashTimer);
-  document.body.classList.remove("weapon-firing");
-  document.querySelectorAll(".blast-mark").forEach((mark) => mark.remove());
+  window.clearTimeout(blastShakeTimer);
+  gameWon = false;
+  document.body.classList.remove("weapon-firing", "weapon-recoil-a", "weapon-recoil-b", "game-won");
+  desktop.classList.remove("blast-shake-a", "blast-shake-b");
+  activeBlastMarks.forEach((mark) => {
+    mark.classList.add("is-idle");
+    mark.dataset.active = "false";
+  });
+  activeBlastMarks = [];
+  nextBlastMarkIndex = 0;
   document.querySelectorAll(".window-shard").forEach((shard) => shard.remove());
+  document.querySelectorAll(".error-target-shard").forEach((shard) => shard.remove());
+  resetErrorTargets();
   document.querySelectorAll(".window").forEach((win) => {
     win.classList.remove("damaged", "shattering", "destroyed");
     win.dataset.hits = "0";
@@ -538,18 +917,19 @@ function enableChaosMode() {
     true
   );
 
-  window.addEventListener("mousemove", (event) => {
-    if (!chaosMode) return;
-    setWorldPan(worldX - event.movementX * aimSensitivity, worldY - event.movementY * aimSensitivity);
-    scheduleAutoRepair();
-  });
-
-  desktop.addEventListener("pointermove", (event) => {
-    if (!isAutoFiring) return;
-    lastBlastEvent = event;
-  });
+  window.addEventListener("pointerrawupdate", handleAimMovement, true);
+  window.addEventListener("pointermove", handleAimMovement, true);
+  window.addEventListener("mousemove", handleAimMovement, true);
 
   window.addEventListener("pointerup", stopAutoFire);
+  window.addEventListener(
+    "dragstart",
+    (event) => {
+      if (!chaosMode) return;
+      event.preventDefault();
+    },
+    true
+  );
   window.addEventListener("blur", stopAutoFire);
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && chaosMode) {
@@ -560,10 +940,13 @@ function enableChaosMode() {
 
 renderAppWindows();
 renderContactMail();
+renderErrorTargets();
 buildTaskbar();
 enableWindowActions();
 enableInfoButtons();
 enableDragging();
 enableDesktopFileDragging();
 enableChaosMode();
+createBlastMarkPool();
+prepareAudioPools();
 document.querySelectorAll(".window").forEach((win) => focusWindow(win));
